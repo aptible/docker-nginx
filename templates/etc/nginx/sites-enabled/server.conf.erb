@@ -7,9 +7,12 @@ upstream containers {
 <% end %>
 
 server {
-  listen 80;
+  listen 80 proxy_protocol;
 
   keepalive_timeout 5;
+
+  set_real_ip_from 0.0.0.0/0;
+  real_ip_header proxy_protocol;
 
   error_page 502 503 504 /50x.html;
   location /50x.html {
@@ -36,13 +39,16 @@ server {
 }
 
 server {
-  listen   443;
+  listen   443 proxy_protocol;
 
   ssl on;
   ssl_certificate /etc/nginx/ssl/server.crt;
   ssl_certificate_key /etc/nginx/ssl/server.key;
 
   keepalive_timeout 5;
+
+  set_real_ip_from 0.0.0.0/0;
+  real_ip_header proxy_protocol;
 
   error_page 502 503 504 /50x.html;
   location /50x.html {
