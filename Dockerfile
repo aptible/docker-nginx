@@ -19,12 +19,12 @@ ADD test /tmp/test
 # haproxy 1.5 is not in the mainline alpine repository as of this writing (Feb 15, 2015).
 # cf. http://wiki.alpinelinux.org/wiki/Alpine_Linux_package_management#Add_a_Package
 RUN apk-install haproxy openssl-dev --repository http://dl-4.alpinelinux.org/alpine/edge/main \
-	&& bats /tmp/test \
-	&& rm -rf /tmp/nginx/* \
-	&& apk del haproxy openssl-dev
+    && bats /tmp/test \
+    && rm -rf /tmp/nginx/* \
+    && apk del haproxy openssl-dev
 
 VOLUME /etc/nginx/ssl
 
-EXPOSE 80 443
+EXPOSE 80 443 9000
 
 CMD ["/usr/local/bin/nginx-wrapper"]

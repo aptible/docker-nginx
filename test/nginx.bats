@@ -27,8 +27,14 @@ local_s_client() {
   echo OK | openssl s_client -connect localhost:443 $@
 }
 
-simulate_upstream() {
-  BATS_TEST_DIRNAME="$BATS_TEST_DIRNAME" "$BATS_TEST_DIRNAME"/upstream-server &
+simulate_http_upstream() {
+  "$BATS_TEST_DIRNAME"/upstream-server \
+    "$BATS_TEST_DIRNAME"/upstream-http-response.txt &
+}
+
+simulate_tcp_upstream() {
+  "$BATS_TEST_DIRNAME"/upstream-server \
+    "$BATS_TEST_DIRNAME"/upstream-tcp-response.txt &
 }
 
 setup() {
@@ -43,6 +49,8 @@ teardown() {
   pkill nc || true
   pkill haproxy || true
   rm -rf /etc/nginx/ssl/*
+  rm -f /etc/nginx/sites-enabled/http.conf
+  rm -f /etc/nginx/conf.d/tcp.conf
   cp "$TMPDIR"/* /usr/html
 }
 
@@ -88,22 +96,36 @@ teardown() {
 }
 
 @test "It should accept a list of UPSTREAM_SERVERS" {
-  simulate_upstream
+  simulate_http_upstream
   UPSTREAM_SERVERS=localhost:4000 wait_for_nginx
   run curl localhost 2>/dev/null
   [[ "$output" =~ "Hello World!" ]]
 }
 
 @test "It should accept a list of UPSTREAM_SERVERS (Proxy Protocol)" {
-  simulate_upstream
+  simulate_http_upstream
   PROXY_PROTOCOL=true UPSTREAM_SERVERS=localhost:4000 wait_for_nginx
   wait_for_proxy_protocol
   run curl localhost:8080 2>/dev/null
   [[ "$output" =~ "Hello World!" ]]
 }
 
+@test "It should work with PROTOCOL=tcp" {
+  simulate_tcp_upstream
+  PROTOCOL=tcp UPSTREAM_SERVER_PORTS=9000 UPSTREAM_SERVERS_9000=localhost:4000 wait_for_nginx
+  run nc localhost 9000 2>&1
+
+  # There should be no errors in the NGiNX log file
+  [ ! -s /tmp/nginx.log ]
+
+  # For some reason, nc ONLY generates output when run with a TTY (i.e.,
+  # docker run -t). So the following will cause the test to fail in a
+  # `docker build` context, even though it succeeds when run with a TTY
+  # [[ "$output" =~ "TCP OK" ]]
+}
+
 @test "It should handle HTTPS over Proxy Protocol" {
-  simulate_upstream
+  simulate_http_upstream
   PROXY_PROTOCOL=true UPSTREAM_SERVERS=localhost:4000 wait_for_nginx
   wait_for_proxy_protocol
   run curl -k https://localhost:8443 2>/dev/null
@@ -223,7 +245,7 @@ teardown() {
 }
 
 @test "It supports GZIP compression of responses" {
-  simulate_upstream
+  simulate_http_upstream
   UPSTREAM_SERVERS=localhost:4000 wait_for_nginx
   curl -H "Accept-Encoding: gzip" localhost | gunzip -c | grep "Hello World!"
 }

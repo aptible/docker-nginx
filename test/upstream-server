@@ -1,5 +1,7 @@
 #!/bin/sh
 
 # inspired by
-# http://www.commandlinefu.com/commands/view/9164/one-command-line-web-server-on-port-80-using-nc-netcat
-while true; do nc -l -p 4000 127.0.0.1 < "$BATS_TEST_DIRNAME"/upstream-response.txt; done &
+# http://www.commandlinefu.com/commands/view/9164
+
+response="$1"
+while true; do nc -l -p 4000 < $response; done &

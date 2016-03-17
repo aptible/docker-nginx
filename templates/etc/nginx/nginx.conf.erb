@@ -53,8 +53,9 @@ http {
   ssl_prefer_server_ciphers on;
   ssl_dhparam /etc/nginx/dhparams.pem;
 
-  include /etc/nginx/conf.d/*.conf;
   include /etc/nginx/sites-enabled/*.conf;
 }
+
+include /etc/nginx/conf.d/*.conf;
 
 daemon off;
