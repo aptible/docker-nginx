@@ -157,6 +157,13 @@ NGINX_VERSION=1.10.1
   [[ "$output" =~ "Strict-Transport-Security: max-age=31536000" ]]
 }
 
+@test "It should send a Strict-Transport-Security header with FORCE_SSL even on error responses" {
+  UPSTREAM_RESPONSE="upstream-response-500.txt" simulate_upstream
+  UPSTREAM_SERVERS=localhost:4000 FORCE_SSL=true wait_for_nginx
+  run curl -Ik https://localhost 2>/dev/null
+  [[ "$output" =~ "Strict-Transport-Security: max-age=31536000" ]]
+}
+
 @test "The Strict-Transport-Security header's max-age should be configurable" {
   FORCE_SSL=true HSTS_MAX_AGE=1234 wait_for_nginx
   run curl -Ik https://localhost 2>/dev/null
