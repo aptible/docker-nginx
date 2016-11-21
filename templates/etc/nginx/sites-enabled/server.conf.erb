@@ -95,7 +95,7 @@ server {
   }
 
   <% if ENV['FORCE_SSL'] == 'true' %>
-  add_header Strict-Transport-Security max-age=<%= ENV['HSTS_MAX_AGE'] || 31536000 %>;
+  add_header Strict-Transport-Security "max-age=<%= ENV['HSTS_MAX_AGE'] || 31536000 %>" always;
   <% end %>
 
   include /etc/nginx/partial/health.conf;
