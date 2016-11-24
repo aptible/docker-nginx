@@ -22,6 +22,8 @@ server {
   access_log /proc/self/fd/1 proxy_log;
   <% else %>
   listen 80;
+
+  access_log /proc/self/fd/1 http_log;
   <% end %>
 
   keepalive_timeout 5;
@@ -77,6 +79,8 @@ server {
   access_log /proc/self/fd/1 proxy_log;
   <% else %>
   listen 443;
+
+  access_log /proc/self/fd/1 http_log;
   <% end %>
 
   ssl on;
@@ -129,7 +133,7 @@ server {
 server {
   listen 9000;
 
-  access_log /proc/self/fd/1 proxy_log;
+  access_log /proc/self/fd/1 http_log;
 
   location = / {
     default_type 'text/plain';
