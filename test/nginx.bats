@@ -1,5 +1,8 @@
 #!/usr/bin/env bats
 
+export UPSTREAM_OUT="/tmp/app.log"
+export NGINX_OUT="/tmp/nginx.log"
+
 install_heartbleed() {
   export GOPATH=/tmp/gocode
   export PATH=${PATH}:/usr/local/go/bin:${GOPATH}/bin
@@ -23,7 +26,7 @@ wait_for() {
 }
 
 wait_for_nginx() {
-  /usr/local/bin/nginx-wrapper > /tmp/nginx.log 2>&1 &
+  /usr/local/bin/nginx-wrapper > "$NGINX_OUT" 2>&1 &
   wait_for pgrep -x "nginx: worker process"
   wait_for nc -z localhost 80
   wait_for nc -z localhost 443
@@ -48,13 +51,12 @@ setup() {
   TMPDIR=$(mktemp -d)
   cp /usr/html/* "$TMPDIR"
   ps auxwww
-  export UPSTREAM_OUT="/tmp/app.log"
 }
 
 teardown() {
   echo "---- BEGIN NGINX LOGS ----"
-  cat /tmp/nginx.log || true
-  rm -f /tmp/nginx.log
+  cat "$NGINX_OUT" || true
+  rm -f "$NGINX_OUT"
   echo "---- END NGINX LOGS ----"
 
   echo "---- BEGIN APP LOGS ----"
@@ -103,15 +105,36 @@ NGINX_VERSION=1.10.1
 
 @test "It should log to STDOUT" {
   wait_for_nginx
-  curl localhost > /dev/null 2>&1
-  [[ -s /tmp/nginx.log ]]
+  curl -H 'Host: test.host' localhost > /dev/null 2>&1
+  wait_for grep -i 'test.host' "$NGINX_OUT"
 }
 
-@test "It should log to STDOUT (Proxy Protocol)" {
+@test "It should log to STDOUT (HTTP + Proxy Protocol)" {
   PROXY_PROTOCOL=true wait_for_nginx
   wait_for_proxy_protocol
-  curl localhost:8080 > /dev/null 2>&1
-  [[ -s /tmp/nginx.log ]]
+  curl -H 'Host: test.host' localhost:8080 > /dev/null 2>&1
+  wait_for grep -i 'test.host' "$NGINX_OUT"
+}
+
+@test "It should log to STDOUT (HTTPS)" {
+  CIPHER="ECDHE-RSA-AES128-GCM-SHA256"
+  wait_for_nginx
+  curl -k --tlsv1.2 --ciphers "$CIPHER" -H 'Host: test.host' https://localhost \
+    > /dev/null 2>&1
+  wait_for grep -i 'test.host' "$NGINX_OUT"
+  wait_for grep -i 'TLSv1.2' "$NGINX_OUT"
+  wait_for grep -i "$CIPHER" "$NGINX_OUT"
+}
+
+@test "It should log to STDOUT (HTTPS + Proxy Protocol)" {
+  CIPHER="ECDHE-RSA-AES128-GCM-SHA256"
+  PROXY_PROTOCOL=true wait_for_nginx
+  wait_for_proxy_protocol
+  curl -k --tlsv1.2 --ciphers "$CIPHER" -H 'Host: test.host' https://localhost:8443 \
+    > /dev/null 2>&1
+  wait_for grep -i 'test.host' "$NGINX_OUT"
+  wait_for grep -i 'TLSv1.2' "$NGINX_OUT"
+  wait_for grep -i "$CIPHER" "$NGINX_OUT"
 }
 
 @test "It should accept and configure a MAINTENANCE_PAGE_URL" {

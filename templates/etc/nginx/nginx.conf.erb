@@ -25,9 +25,14 @@ http {
   include /etc/nginx/mime.types;
   default_type application/octet-stream;
 
-  # Mirror default "combined" log format, but with Proxy Protocol address
-  log_format proxy_log '$proxy_protocol_addr $host $remote_user [$time_local] '
-                       '"$request" $status $body_bytes_sent '
+  log_format proxy_log '$proxy_protocol_addr $ssl_protocol/$ssl_cipher '
+                       '$host $remote_user [$time_local] '
+                       '"$request" $status $body_bytes_sent $request_time '
+                       '"$http_referer" "$http_user_agent"';
+
+  log_format http_log  '$remote_addr $ssl_protocol/$ssl_cipher '
+                       '$host $remote_user [$time_local] '
+                       '"$request" $status $body_bytes_sent $request_time '
                        '"$http_referer" "$http_user_agent"';
 
   # /dev/stdout is a symlink, pointing to /proc/self/fd/1.
