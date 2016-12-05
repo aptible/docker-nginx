@@ -26,7 +26,11 @@ server {
   access_log /proc/self/fd/1 http_log;
   <% end %>
 
+  <% if ENV['KEEPALIVE_TIMEOUT'] %>
+  keepalive_timeout <%= ENV['KEEPALIVE_TIMEOUT'] %>;
+  <% else %>
   keepalive_timeout 5;
+  <% end %>
 
   error_page 502 503 504 /50x.html;
   location /50x.html {
