@@ -1,0 +1,23 @@
+#!/bin/bash
+PROTO="$1"
+SLEEP="$2"
+
+if [[ "$PROTO" = "http" ]]; then
+  COMMAND=(nc localhost 80)
+elif [[ "$PROTO" = "https" ]]; then
+  COMMAND=(openssl s_client -connect localhost:443)
+else
+  echo "Invalid proto: $PROTO"
+  exit 1
+fi
+
+(
+  req="GET / HTTP/1.1\nHost: localhost\n\n"
+  printf "$req"
+  # This isn't super neat... but we need to give our upstream-server time to
+  # restart..!
+  sleep 1
+  printf "$req"
+  sleep "$SLEEP"
+  printf "$req"
+) | "${COMMAND[@]}"

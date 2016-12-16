@@ -717,3 +717,67 @@ HEALTH_ROUTE=.aptible/alb-healthcheck
   run curl -skw "%{http_code}" "https://localhost/${HEALTH_ROUTE}"
   [[ "$output" -eq 200 ]]
 }
+
+@test "it applies a default KEEPALIVE_TIMEOUT of 5 seconds (HTTP)" {
+  simulate_upstream
+  UPSTREAM_SERVERS=localhost:4000 wait_for_nginx
+  wait_for_proxy_protocol
+
+  # We're going to make 3 requests, but the last request will come in 6 seconds
+  # after the second one. As a result, we should only see 2 requests on the
+  # upstream.
+  "${BATS_TEST_DIRNAME}/connect-keepalive" http 6
+
+  wait_for grep -i 'get' "$UPSTREAM_OUT"
+  [[ "$(grep -i 'get' "$UPSTREAM_OUT" | wc -l)" -eq 2 ]]
+}
+
+@test "it applies a default KEEPALIVE_TIMEOUT of 5 seconds (HTTPS)" {
+  simulate_upstream
+  UPSTREAM_SERVERS=localhost:4000 wait_for_nginx
+  wait_for_proxy_protocol
+
+  # Same as above
+  "${BATS_TEST_DIRNAME}/connect-keepalive" https 6
+
+  wait_for grep -i 'get' "$UPSTREAM_OUT"
+  [[ "$(grep -i 'get' "$UPSTREAM_OUT" | wc -l)" -eq 2 ]]
+}
+
+@test "it allows setting a custom KEEPALIVE_TIMEOUT (http)" {
+  simulate_upstream
+  KEEPALIVE_TIMEOUT=60 UPSTREAM_SERVERS=localhost:4000 wait_for_nginx
+  wait_for_proxy_protocol
+
+  # This time, we should see all 3 requests
+  "${BATS_TEST_DIRNAME}/connect-keepalive" http 6
+
+  wait_for grep -i 'get' "$UPSTREAM_OUT"
+  [[ "$(grep -i 'get' "$UPSTREAM_OUT" | wc -l)" -eq 3 ]]
+}
+
+@test "it allows setting a custom KEEPALIVE_TIMEOUT (https)" {
+  simulate_upstream
+  KEEPALIVE_TIMEOUT=60 UPSTREAM_SERVERS=localhost:4000 wait_for_nginx
+  wait_for_proxy_protocol
+
+  # This time, we should see all 3 requests
+  "${BATS_TEST_DIRNAME}/connect-keepalive" https 6
+
+  wait_for grep -i 'get' "$UPSTREAM_OUT"
+  [[ "$(grep -i 'get' "$UPSTREAM_OUT" | wc -l)" -eq 3 ]]
+}
+
+@test "it ignores an invalid KEEPALIVE_TIMEOUT" {
+  simulate_upstream
+  KEEPALIVE_TIMEOUT="20+FOOBAR" UPSTREAM_SERVERS=localhost:4000 wait_for_nginx
+  wait_for_proxy_protocol
+
+  # Same as default test
+  "${BATS_TEST_DIRNAME}/connect-keepalive" http 6
+
+  wait_for grep -i 'get' "$UPSTREAM_OUT"
+  [[ "$(grep -i 'get' "$UPSTREAM_OUT" | wc -l)" -eq 2 ]]
+
+  wait_for grep -i 'not acceptable' '/tmp/nginx.log'
+}
