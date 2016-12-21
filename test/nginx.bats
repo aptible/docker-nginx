@@ -780,7 +780,9 @@ HEALTH_ROUTE=.aptible/alb-healthcheck
   # This time, we should see all 3 requests
   "${BATS_TEST_DIRNAME}/connect-keepalive" http 6
 
-  wait_for grep -i 'get' "$UPSTREAM_OUT"
+  curl -I localhost
+  wait_for grep -i 'head' "$UPSTREAM_OUT"
+
   [[ "$(grep -i 'get' "$UPSTREAM_OUT" | wc -l)" -eq 3 ]]
 }
 
