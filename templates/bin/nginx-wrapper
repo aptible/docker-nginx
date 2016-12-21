@@ -25,6 +25,11 @@ fi
 [ -n "$SSL_PROTOCOLS_OVERRIDE" ] && SSL_PROTOCOLS="${SSL_PROTOCOLS_OVERRIDE//;}"
 export SSL_CIPHERS SSL_PROTOCOLS
 
+if [[ -n "$KEEPALIVE_TIMEOUT" ]] && [[ ! "$KEEPALIVE_TIMEOUT" =~ ^[0-9]+$ ]]; then
+  echo "KEEPALIVE_TIMEOUT=${KEEPALIVE_TIMEOUT} is not acceptable!" >&2
+  unset KEEPALIVE_TIMEOUT
+fi
+
 # Process ERB variables in Nginx configuration templates
 cd /etc/nginx && erb nginx.conf.erb > nginx.conf
 cd /etc/nginx/partial && erb health.conf.erb > health.conf

@@ -26,7 +26,7 @@ server {
   access_log /proc/self/fd/1 http_log;
   <% end %>
 
-  keepalive_timeout 5;
+  keepalive_timeout <%= ENV['KEEPALIVE_TIMEOUT'] || 5 %>;
 
   error_page 502 503 504 /50x.html;
   location /50x.html {
@@ -92,7 +92,7 @@ server {
   resolver 8.8.8.8 8.8.4.4;
   <% end %>
 
-  keepalive_timeout 5;
+  keepalive_timeout <%= ENV['KEEPALIVE_TIMEOUT'] || 5 %>;
 
   error_page 502 503 504 /50x.html;
   location /50x.html {
