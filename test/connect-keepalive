@@ -20,6 +20,8 @@ fi
   printf "$req"
   sleep "$SLEEP"
   printf "$req"
+  # And, we need to give Nginx time to respond before we hang up.
+  sleep 1
 ) | "${COMMAND[@]}"
 
 true
