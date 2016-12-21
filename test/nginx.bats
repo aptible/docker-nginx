@@ -751,7 +751,10 @@ HEALTH_ROUTE=.aptible/alb-healthcheck
   # upstream.
   "${BATS_TEST_DIRNAME}/connect-keepalive" http 6
 
-  wait_for grep -i 'get' "$UPSTREAM_OUT"
+  # Ensure all the logs made it to $UPSTREAM_OUT
+  curl -I localhost
+  wait_for grep -i 'head' "$UPSTREAM_OUT"
+
   [[ "$(grep -i 'get' "$UPSTREAM_OUT" | wc -l)" -eq 2 ]]
 }
 
@@ -763,11 +766,13 @@ HEALTH_ROUTE=.aptible/alb-healthcheck
   # Same as above
   "${BATS_TEST_DIRNAME}/connect-keepalive" https 6
 
-  wait_for grep -i 'get' "$UPSTREAM_OUT"
+  curl -I localhost
+  wait_for grep -i 'head' "$UPSTREAM_OUT"
+
   [[ "$(grep -i 'get' "$UPSTREAM_OUT" | wc -l)" -eq 2 ]]
 }
 
-@test "it allows setting a custom KEEPALIVE_TIMEOUT (http)" {
+@test "it allows setting a custom KEEPALIVE_TIMEOUT (HTTP)" {
   simulate_upstream
   KEEPALIVE_TIMEOUT=60 UPSTREAM_SERVERS=localhost:4000 wait_for_nginx
   wait_for_proxy_protocol
@@ -779,7 +784,7 @@ HEALTH_ROUTE=.aptible/alb-healthcheck
   [[ "$(grep -i 'get' "$UPSTREAM_OUT" | wc -l)" -eq 3 ]]
 }
 
-@test "it allows setting a custom KEEPALIVE_TIMEOUT (https)" {
+@test "it allows setting a custom KEEPALIVE_TIMEOUT (HTTPS)" {
   simulate_upstream
   KEEPALIVE_TIMEOUT=60 UPSTREAM_SERVERS=localhost:4000 wait_for_nginx
   wait_for_proxy_protocol
@@ -787,7 +792,9 @@ HEALTH_ROUTE=.aptible/alb-healthcheck
   # This time, we should see all 3 requests
   "${BATS_TEST_DIRNAME}/connect-keepalive" https 6
 
-  wait_for grep -i 'get' "$UPSTREAM_OUT"
+  curl -I localhost
+  wait_for grep -i 'head' "$UPSTREAM_OUT"
+
   [[ "$(grep -i 'get' "$UPSTREAM_OUT" | wc -l)" -eq 3 ]]
 }
 
@@ -799,7 +806,9 @@ HEALTH_ROUTE=.aptible/alb-healthcheck
   # Same as default test
   "${BATS_TEST_DIRNAME}/connect-keepalive" http 6
 
-  wait_for grep -i 'get' "$UPSTREAM_OUT"
+  curl -I localhost
+  wait_for grep -i 'head' "$UPSTREAM_OUT"
+
   [[ "$(grep -i 'get' "$UPSTREAM_OUT" | wc -l)" -eq 2 ]]
 
   wait_for grep -i 'not acceptable' '/tmp/nginx.log'
