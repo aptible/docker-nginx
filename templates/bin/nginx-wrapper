@@ -30,6 +30,11 @@ if [[ -n "$KEEPALIVE_TIMEOUT" ]] && [[ ! "$KEEPALIVE_TIMEOUT" =~ ^[0-9]+$ ]]; th
   unset KEEPALIVE_TIMEOUT
 fi
 
+if [[ -n "$PROXY_IDLE_TIMEOUT" ]] && [[ ! "$PROXY_IDLE_TIMEOUT" =~ ^[0-9]+$ ]]; then
+  echo "PROXY_IDLE_TIMEOUT=${PROXY_IDLE_TIMEOUT} is not acceptable!" >&2
+  unset PROXY_IDLE_TIMEOUT
+fi
+
 # Process ERB variables in Nginx configuration templates
 cd /etc/nginx && erb nginx.conf.erb > nginx.conf
 cd /etc/nginx/partial && erb health.conf.erb > health.conf
