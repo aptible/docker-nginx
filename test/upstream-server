@@ -3,11 +3,15 @@
 PORT="${UPSTREAM_PORT:-"4000"}"
 RESPONSE="$BATS_TEST_DIRNAME"/"${UPSTREAM_RESPONSE:-"upstream-response.txt"}"
 OUTPUT="${UPSTREAM_OUT:-"/tmp/$$.log"}"
+DELAY="${UPSTREAM_DELAY:-0}"
 
 # inspired by
 # http://www.commandlinefu.com/commands/view/9164/one-command-line-web-server-on-port-80-using-nc-netcat
 echo > "$OUTPUT"
 while true; do
-  nc -l -p "$PORT" 127.0.0.1 < "$RESPONSE" >> "$OUTPUT"
+  (
+    sleep "$DELAY"
+    cat "$RESPONSE"
+  ) | nc -l -p "$PORT" 127.0.0.1 >> "$OUTPUT"
 done
 rm -f "$OUTPUT"

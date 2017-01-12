@@ -27,6 +27,8 @@ server {
   <% end %>
 
   keepalive_timeout <%= ENV['KEEPALIVE_TIMEOUT'] || 5 %>;
+  proxy_connect_timeout <%= ENV['PROXY_IDLE_TIMEOUT'] || 60 %>;
+  proxy_read_timeout <%= ENV['PROXY_IDLE_TIMEOUT'] || 60 %>;
 
   error_page 502 503 504 /50x.html;
   location /50x.html {
@@ -93,6 +95,8 @@ server {
   <% end %>
 
   keepalive_timeout <%= ENV['KEEPALIVE_TIMEOUT'] || 5 %>;
+  proxy_connect_timeout <%= ENV['PROXY_IDLE_TIMEOUT'] || 60 %>;
+  proxy_read_timeout <%= ENV['PROXY_IDLE_TIMEOUT'] || 60 %>;
 
   error_page 502 503 504 /50x.html;
   location /50x.html {

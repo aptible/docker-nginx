@@ -815,3 +815,31 @@ HEALTH_ROUTE=.aptible/alb-healthcheck
 
   wait_for grep -i 'not acceptable' '/tmp/nginx.log'
 }
+
+@test "it allows setting a custom PROXY_IDLE_TIMEOUT (HTTP)" {
+  UPSTREAM_DELAY=5 simulate_upstream
+  PROXY_IDLE_TIMEOUT=1 UPSTREAM_SERVERS=localhost:4000 wait_for_nginx
+  return_code="$(curl -s -o /dev/null -w "%{http_code}" "http://localhost")"
+  [[ "$return_code" == "504" ]]
+}
+
+@test "it allows setting a custom PROXY_IDLE_TIMEOUT (HTTPS)" {
+  UPSTREAM_DELAY=5 simulate_upstream
+  PROXY_IDLE_TIMEOUT=1 UPSTREAM_SERVERS=localhost:4000 wait_for_nginx
+  return_code="$(curl -sk -o /dev/null -w "%{http_code}" "https://localhost")"
+  [[ "$return_code" == "504" ]]
+}
+
+@test "it tolerates a slow upstream when PROXY_IDLE_TIMEOUT is set" {
+  UPSTREAM_DELAY=5 simulate_upstream
+  PROXY_IDLE_TIMEOUT=10 UPSTREAM_SERVERS=localhost:4000 wait_for_nginx
+  run curl localhost 2>/dev/null
+  [[ "$output" =~ "Hello World!" ]]
+}
+
+@test "it tolerates a slow upstream when PROXY_IDLE_TIMEOUT is not set" {
+  UPSTREAM_DELAY=5 simulate_upstream
+  UPSTREAM_SERVERS=localhost:4000 wait_for_nginx
+  run curl localhost 2>/dev/null
+  [[ "$output" =~ "Hello World!" ]]
+}
