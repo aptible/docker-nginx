@@ -5,6 +5,7 @@ location = @healthcheck {
   proxy_pass_request_headers off;
   proxy_pass_request_body off;
   proxy_set_header User-Agent "Aptible Health Check";
+  proxy_set_header X-Aptible-Health-Check 1;
 
   rewrite ^ /healthcheck break;
 

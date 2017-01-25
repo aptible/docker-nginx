@@ -367,6 +367,26 @@ NGINX_VERSION=1.10.1
   [[ "$status" -eq 1 ]]
 }
 
+@test "It drops the X-Aptible-Health-Check header (HTTP)" {
+  simulate_upstream
+  UPSTREAM_SERVERS=localhost:4000 wait_for_nginx
+  curl -s -H 'X-Aptible-Health-Check: some' http://localhost
+
+  wait_for grep -i 'get' "$UPSTREAM_OUT"
+  run grep -i 'X-Aptible-Health-Check:' "$UPSTREAM_OUT"
+  [[ "$status" -eq 1 ]]
+}
+
+@test "It drops the X-Aptible-Health-Check header (HTTPS)" {
+  simulate_upstream
+  UPSTREAM_SERVERS=localhost:4000 wait_for_nginx
+  curl -sk -H 'X-Aptible-Health-Check: some' https://localhost
+
+  wait_for grep -i 'get' "$UPSTREAM_OUT"
+  run grep -i 'X-Aptible-Health-Check:' "$UPSTREAM_OUT"
+  [[ "$status" -eq 1 ]]
+}
+
 @test "It supports GZIP compression of responses" {
   simulate_upstream
   UPSTREAM_SERVERS=localhost:4000 wait_for_nginx
@@ -465,6 +485,16 @@ HEALTH_PORT="Port 9000"
   [[ "$status" -eq 1 ]]
 }
 
+@test "${HEALTH_PORT} Nginx sets X-Aptible-Health-Check" {
+  simulate_upstream
+  PROXY_PROTOCOL=true UPSTREAM_SERVERS=localhost:4000 wait_for_nginx
+
+  curl -fs http://localhost:9000/
+  wait_for grep -i 'get' "$UPSTREAM_OUT"
+
+  grep -i 'X-Aptible-Health-Check' "$UPSTREAM_OUT"
+}
+
 @test "${HEALTH_PORT} Nginx rewrites the User-Agent header to Aptible Health Check" {
   simulate_upstream
   PROXY_PROTOCOL=true UPSTREAM_SERVERS=localhost:4000 wait_for_nginx
@@ -561,6 +591,16 @@ HEALTH_ROUTE=.aptible/alb-healthcheck
 
   run grep -i 'foo' "$UPSTREAM_OUT"
   [[ "$status" -eq 1 ]]
+}
+
+@test "${HEALTH_ROUTE} (HTTP): Nginx sets X-Aptible-Health-Check" {
+  simulate_upstream
+  UPSTREAM_SERVERS=localhost:4000 wait_for_nginx
+
+  curl -fs -H 'Authorization: foo' "http://localhost/${HEALTH_ROUTE}"
+  wait_for grep -i 'get' "$UPSTREAM_OUT"
+
+  grep -i 'X-Aptible-Health-Check' "$UPSTREAM_OUT"
 }
 
 @test "${HEALTH_ROUTE} (HTTP): Nginx rewrites the User-Agent header to Aptible Health Check" {
@@ -665,6 +705,16 @@ HEALTH_ROUTE=.aptible/alb-healthcheck
 
   run grep -i 'foo' "$UPSTREAM_OUT"
   [[ "$status" -eq 1 ]]
+}
+
+@test "${HEALTH_ROUTE} (HTTPS): Nginx sets X-Aptible-Health-Check" {
+  simulate_upstream
+  UPSTREAM_SERVERS=localhost:4000 wait_for_nginx
+
+  curl -fsk "https://localhost/${HEALTH_ROUTE}"
+  wait_for grep -i 'get' "$UPSTREAM_OUT"
+
+  grep -i 'X-Aptible-Health-Check' "$UPSTREAM_OUT"
 }
 
 @test "${HEALTH_ROUTE} (HTTPS): Nginx rewrites the User-Agent header to Aptible Health Check" {
