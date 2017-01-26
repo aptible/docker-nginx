@@ -1,4 +1,6 @@
-FROM quay.io/aptible/alpine
+FROM quay.io/aptible/alpine:3.3
+
+RUN apk-install openssl>=1.0.2k
 
 # ruby necessary for ERB
 # curl necessary for integration tests
