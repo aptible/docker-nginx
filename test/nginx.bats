@@ -411,7 +411,26 @@ NGINX_VERSION=1.10.1
   [[ "$output" =~ 'Hello World!' ]]
 }
 
-@test "It does not redirect ACME requests if ACME_SERVER is unset" {
+@test "It redirects ACME requests if ACME_REDIRECT_HOST is set" {
+  UPSTREAM_PORT=5000 UPSTREAM_RESPONSE="acme.txt" simulate_upstream
+  simulate_upstream
+
+  # NOTE: aptible.in won't actually resolve, but that's OK. What we need here is
+  # a domain that will not rediredct any further. Not resolving achieves that.
+  ACME_REDIRECT_HOST=aptible.in UPSTREAM_SERVERS=localhost:4000 wait_for_nginx
+
+  run curl -Ls -o /dev/null -w '%{url_effective}' "http://localhost/.well-known/acme-challenge/123"
+  [[ "$output" = 'http://aptible.in/.well-known/acme-challenge/123' ]]
+
+  run curl -Lsk -o /dev/null -w '%{url_effective}' "https://localhost/.well-known/acme-challenge/123"
+  [[ "$output" = 'https://aptible.in/.well-known/acme-challenge/123' ]]
+
+  run curl "http://localhost/"
+  echo "$output"
+  [[ "$output" =~ 'Hello World!' ]]
+}
+
+@test "It does not redirect ACME requests if neither ACME_SERVER or ACME_REDIRECT_HOST is set" {
   UPSTREAM_PORT=5000 UPSTREAM_RESPONSE="acme.txt" simulate_upstream
   simulate_upstream
   UPSTREAM_SERVERS=localhost:4000 wait_for_nginx
@@ -442,7 +461,7 @@ NGINX_VERSION=1.10.1
   [[ ! "$output" =~ "Strict-Transport-Security:" ]]
 }
 
-@test "When ACME is enabled with FORCE_SSL, it redirects to SSL and sets HSTS headers" {
+@test "When ACME is ready with FORCE_SSL, it redirects to SSL and sets HSTS headers" {
   ACME_READY="true" FORCE_SSL="true" wait_for_nginx
 
   run curl -I localhost 2>/dev/null
