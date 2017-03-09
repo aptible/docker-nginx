@@ -38,6 +38,10 @@ server {
   location /.well-known/acme-challenge {
     proxy_pass http://acme;
   }
+  <% elsif ENV['ACME_REDIRECT_HOST'] %>
+  location /.well-known/acme-challenge {
+    return 301 $scheme://<%= ENV.fetch('ACME_REDIRECT_HOST') %>$request_uri;
+  }
   <% end %>
 
   include /etc/nginx/partial/health.conf;
@@ -105,6 +109,16 @@ server {
 
   <% if ENV['FORCE_SSL'] == 'true' %>
   add_header Strict-Transport-Security "max-age=<%= ENV['HSTS_MAX_AGE'] || 31536000 %>" always;
+  <% end %>
+
+  <% if ENV['ACME_SERVER'] %>
+  location /.well-known/acme-challenge {
+    proxy_pass http://acme;
+  }
+  <% elsif ENV['ACME_REDIRECT_HOST'] %>
+  location /.well-known/acme-challenge {
+    return 301 $scheme://<%= ENV.fetch('ACME_REDIRECT_HOST') %>$request_uri;
+  }
   <% end %>
 
   include /etc/nginx/partial/health.conf;
