@@ -1,5 +1,6 @@
 <% if ENV['UPSTREAM_SERVERS'] %>
 upstream containers {
+  ip_hash;
   <% (ENV['UPSTREAM_SERVERS']).split(',').each do |server| %>
   server <%= server %>;
   <% end %>
