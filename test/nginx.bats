@@ -193,6 +193,12 @@ NGINX_VERSION=1.10.1
   [[ "$output" =~ "Strict-Transport-Security: max-age=1234" ]]
 }
 
+@test "It should send a Strict-Transport-Security header with the preload directive with FORCE_SSL and HSTS_PRELOAD" {
+  FORCE_SSL=true HSTS_PRELOAD=true wait_for_nginx
+  run curl -Ik https://localhost 2>/dev/null
+  [[ "$output" =~ "Strict-Transport-Security: max-age=31536000; includeSubDomains; preload" ]]
+}
+
 @test "Its OpenSSL client should support TLS_FALLBACK_SCSV" {
   FORCE_SSL=true wait_for_nginx
   run local_s_client -fallback_scsv

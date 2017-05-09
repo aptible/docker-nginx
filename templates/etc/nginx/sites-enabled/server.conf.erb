@@ -108,7 +108,7 @@ server {
   }
 
   <% if ENV['FORCE_SSL'] == 'true' %>
-  add_header Strict-Transport-Security "max-age=<%= ENV['HSTS_MAX_AGE'] || 31536000 %>" always;
+  add_header Strict-Transport-Security "max-age=<%= ENV['HSTS_MAX_AGE'] || 31536000 %><%= '; includeSubDomains; preload' if ENV['HSTS_PRELOAD'] == 'true' %>" always;
   <% end %>
 
   <% if ENV['ACME_SERVER'] %>
