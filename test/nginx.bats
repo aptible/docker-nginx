@@ -390,7 +390,10 @@ NGINX_VERSION=1.10.1
 @test "It supports GZIP compression of responses" {
   simulate_upstream
   UPSTREAM_SERVERS=localhost:4000 wait_for_nginx
-  curl -H "Accept-Encoding: gzip" localhost | gunzip -c | grep "Hello World!"
+  run curl -v --compressed localhost
+  [[ "$status" -eq 0 ]]
+  [[ "$output" =~ "Content-Encoding: gzip" ]]
+  [[ "$output" =~ "Hello World" ]]
 }
 
 @test "It includes an informative default error page" {
@@ -815,10 +818,10 @@ HEALTH_ROUTE=.aptible/alb-healthcheck
   UPSTREAM_SERVERS=localhost:4000 wait_for_nginx
   wait_for_proxy_protocol
 
-  # We're going to make 3 requests, but the last request will come in 6 seconds
+  # We're going to make 3 requests, but the last request will come in 8 seconds
   # after the second one. As a result, we should only see 2 requests on the
   # upstream.
-  "${BATS_TEST_DIRNAME}/connect-keepalive" http 6
+  "${BATS_TEST_DIRNAME}/connect-keepalive" http 8
 
   # Ensure all the logs made it to $UPSTREAM_OUT
   curl -I localhost
@@ -833,7 +836,7 @@ HEALTH_ROUTE=.aptible/alb-healthcheck
   wait_for_proxy_protocol
 
   # Same as above
-  "${BATS_TEST_DIRNAME}/connect-keepalive" https 6
+  "${BATS_TEST_DIRNAME}/connect-keepalive" https 8
 
   curl -I localhost
   wait_for grep -i 'head' "$UPSTREAM_OUT"
@@ -847,7 +850,7 @@ HEALTH_ROUTE=.aptible/alb-healthcheck
   wait_for_proxy_protocol
 
   # This time, we should see all 3 requests
-  "${BATS_TEST_DIRNAME}/connect-keepalive" http 6
+  "${BATS_TEST_DIRNAME}/connect-keepalive" http 8
 
   curl -I localhost
   wait_for grep -i 'head' "$UPSTREAM_OUT"
@@ -861,7 +864,7 @@ HEALTH_ROUTE=.aptible/alb-healthcheck
   wait_for_proxy_protocol
 
   # This time, we should see all 3 requests
-  "${BATS_TEST_DIRNAME}/connect-keepalive" https 6
+  "${BATS_TEST_DIRNAME}/connect-keepalive" https 8
 
   curl -I localhost
   wait_for grep -i 'head' "$UPSTREAM_OUT"
@@ -875,7 +878,7 @@ HEALTH_ROUTE=.aptible/alb-healthcheck
   wait_for_proxy_protocol
 
   # Same as default test
-  "${BATS_TEST_DIRNAME}/connect-keepalive" http 6
+  "${BATS_TEST_DIRNAME}/connect-keepalive" http 8
 
   curl -I localhost
   wait_for grep -i 'head' "$UPSTREAM_OUT"
