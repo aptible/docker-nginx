@@ -390,7 +390,10 @@ NGINX_VERSION=1.10.1
 @test "It supports GZIP compression of responses" {
   simulate_upstream
   UPSTREAM_SERVERS=localhost:4000 wait_for_nginx
-  curl -H "Accept-Encoding: gzip" localhost | gunzip -c | grep "Hello World!"
+  run curl -v --compressed localhost
+  [[ "$status" -eq 0 ]]
+  [[ "$output" =~ "Content-Encoding: gzip" ]]
+  [[ "$output" =~ "Hello World" ]]
 }
 
 @test "It includes an informative default error page" {
