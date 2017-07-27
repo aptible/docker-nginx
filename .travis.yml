@@ -1,0 +1,25 @@
+language: generic
+sudo: true
+
+services:
+  - docker
+
+env:
+  matrix:
+    - TAG=master
+
+script:
+  - make build
+  - make test
+
+before_deploy:
+  - export DOCKER_CONFIG="${HOME}/.docker"
+  - mkdir -p "$DOCKER_CONFIG"
+  - openssl aes-256-cbc -K "$DOCKER_CONF_key" -iv "$DOCKER_CONF_iv" -in .docker/config.json.enc -out "${DOCKER_CONFIG}/config.json" -d
+
+deploy:
+  provider: script
+  skip_cleanup: true
+  script: make push
+  on:
+    branch: master
