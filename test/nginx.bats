@@ -87,6 +87,29 @@ NGINX_VERSION=1.10.1
   [[ ! "$output" =~ "$NGINX_VERSION" ]]
 }
 
+@test "It allows passing a certificate via the environment" {
+  openssl req -x509 -batch -nodes -newkey rsa:1024 \
+    -keyout nginx.key -out nginx.crt \
+    -subj /CN=hello-test-cert
+
+  SSL_CERTIFICATE="$(cat nginx.crt)" SSL_KEY="$(cat nginx.key)" wait_for_nginx
+  rm nginx.crt nginx.key
+
+  run curl -kv https://localhost
+  [[ "$output" =~ "hello-test-cert" ]]
+}
+
+@test "It allows passing a certificate via files" {
+  openssl req -x509 -batch -nodes -newkey rsa:1024 \
+    -keyout /etc/nginx/ssl/server.key -out /etc/nginx/ssl/server.crt \
+    -subj /CN=hello-test-cert
+
+  wait_for_nginx
+
+  run curl -kv https://localhost
+  [[ "$output" =~ "hello-test-cert" ]]
+}
+
 @test "It should pass an external Heartbleed test" {
   skip
   install_heartbleed

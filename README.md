@@ -17,6 +17,8 @@ The server starts with a default self-signed certificate. To load in your own ce
 
     docker run -v /path/to/server.key:/etc/nginx/ssl/server.key -v /path/to/server.crt:/etc/nginx/ssl/server.crt quay.io/aptible/nginx
 
+Alternatively, you can provide these via the `SSL_CERTIFICATE` and `SSL_KEY` environment variables.
+
 To force SSL, set the `FORCE_SSL` environment variable to `true`:
 
     docker run -e FORCE_SSL=true quay.io/aptible/nginx
