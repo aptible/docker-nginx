@@ -33,7 +33,7 @@ wait_for_nginx() {
 }
 
 wait_for_proxy_protocol() {
-  # This is really weird, but it appears NGiNX takes several seconds to
+  # This is really weird, but it appears nginx takes several seconds to
   # correctly handle Proxy Protocol requests
   haproxy -f ${BATS_TEST_DIRNAME}/haproxy.cfg
   wait_for curl localhost:8080
@@ -75,7 +75,7 @@ teardown() {
 
 NGINX_VERSION=1.10.1
 
-@test "It should install NGiNX $NGINX_VERSION" {
+@test "It should install nginx $NGINX_VERSION" {
   run /usr/sbin/nginx -v
   [[ "$output" =~ "$NGINX_VERSION"  ]]
 }
@@ -937,4 +937,18 @@ HEALTH_ROUTE=.aptible/alb-healthcheck
   UPSTREAM_SERVERS=localhost:4000 wait_for_nginx
   run curl localhost 2>/dev/null
   [[ "$output" =~ "Hello World!" ]]
+}
+
+@test "It enables hostname filtering (HTTP)" {
+  host=foobar
+  HOSTNAME_FILTERING_SERVER_NAME="$host" wait_for_nginx
+  curl --fail --connect-to "${host}:80:localhost:80" "http://${host}"
+  ! curl --fail "http://localhost"
+}
+
+@test "It enables hostname filtering (HTTPS)" {
+  host=foobar
+  HOSTNAME_FILTERING_SERVER_NAME="$host" wait_for_nginx
+  curl -k --fail --connect-to "${host}:443:localhost:443" "https://${host}"
+  ! curl --fail "http://localhost"
 }
