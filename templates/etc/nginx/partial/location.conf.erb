@@ -1,0 +1,21 @@
+<% if ENV['ACME_PENDING'] == 'true' %>
+  rewrite ^ /acme-pending.html break;
+  root /html;
+<% else %>
+
+  proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+  proxy_set_header Host $http_host;
+  proxy_set_header X-Request-Start "t=${msec}";
+  proxy_set_header Proxy "";
+  proxy_set_header X-Aptible-Health-Check "";
+  proxy_redirect off;
+
+  <% if ENV['UPSTREAM_SERVERS'] %>
+    proxy_pass http://containers;
+
+    proxy_http_version 1.1;
+    proxy_set_header Upgrade $http_upgrade;
+    proxy_set_header Connection "upgrade";
+  <% end %>
+  break;
+<% end %>

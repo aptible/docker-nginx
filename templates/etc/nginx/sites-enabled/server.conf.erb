@@ -1,7 +1,7 @@
 <% if ENV['UPSTREAM_SERVERS'] %>
 upstream containers {
   <% (ENV['UPSTREAM_SERVERS']).split(',').each do |server| %>
-  server <%= server %>;
+    server <%= server %>;
   <% end %>
 }
 <% end %>
@@ -13,141 +13,64 @@ upstream acme {
 <% end %>
 
 server {
-  <% if ENV['PROXY_PROTOCOL'] == 'true' %>
-  listen 80 proxy_protocol;
+  listen 80 <%= 'proxy_protocol' if ENV['PROXY_PROTOCOL'] == 'true' %>;
 
-  set_real_ip_from 0.0.0.0/0;
-  real_ip_header proxy_protocol;
-
-  access_log /proc/self/fd/1 proxy_log;
-  <% else %>
-  listen 80;
-
-  access_log /proc/self/fd/1 http_log;
-  <% end %>
-
-  keepalive_timeout <%= ENV['KEEPALIVE_TIMEOUT'] || 5 %>;
-  proxy_connect_timeout <%= ENV['PROXY_IDLE_TIMEOUT'] || 60 %>;
-  proxy_read_timeout <%= ENV['PROXY_IDLE_TIMEOUT'] || 60 %>;
-
-  error_page 502 503 504 /50x.html;
-  location /50x.html {
-  }
-
-  <% if ENV['ACME_SERVER'] %>
-  location /.well-known/acme-challenge {
-    proxy_pass http://acme;
-  }
-  <% elsif ENV['ACME_REDIRECT_HOST'] %>
-  location /.well-known/acme-challenge {
-    return 301 $scheme://<%= ENV.fetch('ACME_REDIRECT_HOST') %>$request_uri;
-  }
-  <% end %>
-
+  include /etc/nginx/partial/server.conf;
   include /etc/nginx/partial/health.conf;
 
   location / {
-    <% if ENV['ACME_PENDING'] == 'true' %>
-    rewrite ^ /acme-pending.html break;
-    root /html;
-    <% else %>
-
-    <% if ENV['FORCE_SSL'] == 'true' %>
-    return 301 https://$host$request_uri;
-    <% end %>
-
+  <% if ENV['FORCE_SSL'] == 'true' %>
+      return 301 https://$host$request_uri;
+  <% else %>
     proxy_set_header X-Forwarded-Proto http;
-    proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-    proxy_set_header Host $http_host;
-    proxy_set_header X-Request-Start "t=${msec}";
-    proxy_set_header Proxy "";
-    proxy_set_header X-Aptible-Health-Check "";
-    proxy_redirect off;
-
-    <% if ENV['UPSTREAM_SERVERS'] %>
-    proxy_pass http://containers;
-
-    proxy_http_version 1.1;
-    proxy_set_header Upgrade $http_upgrade;
-    proxy_set_header Connection "upgrade";
-    <% end %>
-    break;
-    <% end %>
+    include /etc/nginx/partial/location.conf;
+  <% end %>
   }
 }
 
 server {
-  <% if ENV['PROXY_PROTOCOL'] == 'true' %>
-  listen 443 proxy_protocol;
-
-  set_real_ip_from 0.0.0.0/0;
-  real_ip_header proxy_protocol;
-
-  access_log /proc/self/fd/1 proxy_log;
-  <% else %>
-  listen 443;
-
-  access_log /proc/self/fd/1 http_log;
-  <% end %>
-
-  ssl on;
-  ssl_certificate <%= ENV.fetch('SSL_CERTIFICATE_FILE') %>;
-  ssl_certificate_key <%= ENV.fetch('SSL_KEY_FILE') %>;
-
-  <% if ENV['ACME_READY'] == 'true' %>
-  ssl_stapling on;
-  resolver 8.8.8.8 8.8.4.4;
-  <% end %>
-
-  keepalive_timeout <%= ENV['KEEPALIVE_TIMEOUT'] || 5 %>;
-  proxy_connect_timeout <%= ENV['PROXY_IDLE_TIMEOUT'] || 60 %>;
-  proxy_read_timeout <%= ENV['PROXY_IDLE_TIMEOUT'] || 60 %>;
-
-  error_page 502 503 504 /50x.html;
-  location /50x.html {
-  }
+  listen 443 <%= 'proxy_protocol' if ENV['PROXY_PROTOCOL'] == 'true' %>;
 
   <% if ENV['FORCE_SSL'] == 'true' %>
-  add_header Strict-Transport-Security "max-age=<%= ENV['HSTS_MAX_AGE'] || 31536000 %>" always;
+    add_header Strict-Transport-Security "max-age=<%= ENV['HSTS_MAX_AGE'] || 31536000 %>" always;
   <% end %>
 
-  <% if ENV['ACME_SERVER'] %>
-  location /.well-known/acme-challenge {
-    proxy_pass http://acme;
-  }
-  <% elsif ENV['ACME_REDIRECT_HOST'] %>
-  location /.well-known/acme-challenge {
-    return 301 $scheme://<%= ENV.fetch('ACME_REDIRECT_HOST') %>$request_uri;
-  }
-  <% end %>
-
+  include /etc/nginx/partial/server.conf;
+  include /etc/nginx/partial/ssl.conf;
   include /etc/nginx/partial/health.conf;
 
   location / {
-    <% if ENV['ACME_PENDING'] %>
-    rewrite ^ /acme-pending.html break;
-    root /html;
-    <% else %>
-
     proxy_set_header X-Forwarded-Proto https;
-    proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-    proxy_set_header Host $http_host;
-    proxy_set_header X-Request-Start "t=${msec}";
-    proxy_set_header Proxy "";
-    proxy_set_header X-Aptible-Health-Check "";
-    proxy_redirect off;
-
-    <% if ENV['UPSTREAM_SERVERS'] %>
-    proxy_pass http://containers;
-
-    proxy_http_version 1.1;
-    proxy_set_header Upgrade $http_upgrade;
-    proxy_set_header Connection "upgrade";
-    <% end %>
-    break;
-    <% end %>
+    include /etc/nginx/partial/location.conf;
   }
 }
+
+<% if ENV['HOSTNAME_FILTERING_SERVER_NAME'] %>
+  server {
+    listen 80 default_server <%= 'proxy_protocol' if ENV['PROXY_PROTOCOL'] == 'true' %>;
+
+    include /etc/nginx/partial/health.conf;
+
+    location / {
+      return 444;
+    }
+  }
+
+  server {
+    # NOTE: This server leaks the hostname by using the same SSL certificate as
+    # the "real" server. That is fine on Enclave because clients are not
+    # connecting directly to Nginx. That said, we should perhaps allow passing
+    # 2 certificates here: a default, and one for SNI.
+    listen 443 default_server <%= 'proxy_protocol' if ENV['PROXY_PROTOCOL'] == 'true' %>;
+
+    include /etc/nginx/partial/ssl.conf;
+    include /etc/nginx/partial/health.conf;
+
+    location / {
+      return 444;
+    }
+  }
+<% end %>
 
 <% if ENV['UPSTREAM_SERVERS'] %>
 server {
