@@ -50,10 +50,7 @@ server {
     listen 80 default_server <%= 'proxy_protocol' if ENV['PROXY_PROTOCOL'] == 'true' %>;
 
     include /etc/nginx/partial/health.conf;
-
-    location / {
-      return 444;
-    }
+    include /etc/nginx/partial/hostname-filtering.conf;
   }
 
   server {
@@ -65,10 +62,7 @@ server {
 
     include /etc/nginx/partial/ssl.conf;
     include /etc/nginx/partial/health.conf;
-
-    location / {
-      return 444;
-    }
+    include /etc/nginx/partial/hostname-filtering.conf;
   }
 <% end %>
 

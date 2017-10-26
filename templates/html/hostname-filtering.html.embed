@@ -1,0 +1,11 @@
+<h1>This request was blocked by Hostname Filtering</h1>
+
+<p>
+This means your request used a hostname different from the one you used when
+configuring this Endpoint and enabled Hostname Filtering.
+</p>
+
+<p>
+Make sure you are using the hostname you specified when creating this Endpoint
+to connect.
+</p>

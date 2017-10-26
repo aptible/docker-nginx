@@ -1,0 +1,10 @@
+error_page 400 /hostname-filtering.html;
+
+location = /hostname-filtering.html {
+  root /usr/html;
+  internal;
+}
+
+location / {
+  return 400;
+}

@@ -1,4 +1,5 @@
 <% require 'base64' %>
+
 <!DOCTYPE html>
 <html>
   <head>
@@ -56,16 +57,7 @@
         <div class="error-body">
           <div class="error-logo"></div>
 
-          <h1>This application crashed</h1>
-
-          <p>
-          If you are a visitor, please try again shortly.
-          </p>
-
-          <p>
-          If you are the owner of this application, check your logs for
-          errors, or restart your app.
-          </p>
+          <%= File.read(ENV.fetch('ERROR_EMBED_PATH')) %>
         </div>
       </div>
     </div>

@@ -18,9 +18,10 @@ ADD templates/html /usr/html/
 ADD templates/etc /etc
 ADD templates/bin /usr/local/bin
 
-# Generate default 50x.html
+# Generate default error pages
 RUN cd /usr/html \
- && erb 50x.html.erb > 50x.html
+ && ERROR_EMBED_PATH="50x.html.embed" erb error.html.erb > 50x.html \
+ && ERROR_EMBED_PATH="hostname-filtering.html.embed" erb error.html.erb > hostname-filtering.html
 
 RUN mkdir /html
 ADD templates/html/acme-pending.html.erb /html/
