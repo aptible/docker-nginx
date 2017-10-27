@@ -80,10 +80,15 @@ server {
     <% else %>
     content_by_lua_block {
       local r = ngx.location.capture("/healthcheck");
+
       if r.status == 502 then
         ngx.status = 502;
       else
+      <% if ENV['STRICT_HEALTH_CHECKS'] == 'true' %>
+        ngx.status = r.status;
+      <% else %>
         ngx.status = 200;
+      <% end %>
       end
     }
     <% end %>

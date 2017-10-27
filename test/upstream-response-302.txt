@@ -1,0 +1,6 @@
+HTTP/1.1 302 Found
+Content-Type: application/json
+Content-Length: 37
+Location: http://example.com/redirect
+
+{ "message": "See you other there!" }
