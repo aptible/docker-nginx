@@ -35,17 +35,36 @@ if [[ -n "$PROXY_IDLE_TIMEOUT" ]] && [[ ! "$PROXY_IDLE_TIMEOUT" =~ ^[0-9]+$ ]]; 
   unset PROXY_IDLE_TIMEOUT
 fi
 
+export SSL_CERTIFICATE_FILE="/etc/nginx/ssl/server.crt"
+export SSL_KEY_FILE="/etc/nginx/ssl/server.key"
+
 # Process ERB variables in Nginx configuration templates
 cd /etc/nginx && erb nginx.conf.erb > nginx.conf
 cd /etc/nginx/partial && erb health.conf.erb > health.conf
 cd /etc/nginx/sites-enabled && erb server.conf.erb > server.conf
 
-if [ ! -f /etc/nginx/ssl/server.crt ]; then
-  mkdir -p /etc/nginx/ssl
-  cd /etc/nginx/ssl
-  openssl req -new -newkey rsa:1024 -days 365000 -nodes -x509 \
-    -keyout server.key -subj /CN=example.com -out server.crt
-  chmod og-rwx server.key
+if [[ -n "$SSL_CERTIFICATE" ]]; then
+  mkdir -p "$(dirname "$SSL_CERTIFICATE_FILE")"
+  touch "$SSL_CERTIFICATE_FILE"
+  chmod 644 "$SSL_CERTIFICATE_FILE"
+  echo "$SSL_CERTIFICATE" > "$SSL_CERTIFICATE_FILE"
+  unset SSL_CERTIFICATE
 fi
 
-/usr/sbin/nginx "$@"
+if [[ -n "$SSL_KEY" ]]; then
+  mkdir -p "$(dirname "$SSL_KEY_FILE")"
+  touch "$SSL_KEY_FILE"
+  chmod 600 "$SSL_KEY_FILE"
+  echo "$SSL_KEY" > "$SSL_KEY_FILE"
+  unset SSL_KEY
+fi
+
+if [[ ! -f "$SSL_CERTIFICATE_FILE" ]] || [[ ! -f "$SSL_KEY_FILE" ]]; then
+  mkdir -p "$(dirname "$SSL_CERTIFICATE_FILE")" "$(dirname "$SSL_KEY_FILE")"
+  openssl req -new -newkey rsa:1024 -x509 \
+    -days 365000 -nodes -subj /CN=example.com \
+    -keyout "$SSL_KEY_FILE" -out "$SSL_CERTIFICATE_FILE"
+  chmod 600 "$SSL_KEY_FILE"
+fi
+
+exec /usr/sbin/nginx "$@"
