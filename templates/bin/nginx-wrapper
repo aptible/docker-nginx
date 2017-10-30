@@ -41,6 +41,10 @@ export SSL_KEY_FILE="/etc/nginx/ssl/server.key"
 # Process ERB variables in Nginx configuration templates
 cd /etc/nginx && erb nginx.conf.erb > nginx.conf
 cd /etc/nginx/partial && erb health.conf.erb > health.conf
+cd /etc/nginx/partial && erb server.conf.erb > server.conf
+cd /etc/nginx/partial && erb location.conf.erb > location.conf
+cd /etc/nginx/partial && erb ssl.conf.erb > ssl.conf
+cd /etc/nginx/partial && erb hostname-filtering.conf.erb > hostname-filtering.conf
 cd /etc/nginx/sites-enabled && erb server.conf.erb > server.conf
 
 if [[ -n "$SSL_CERTIFICATE" ]]; then
