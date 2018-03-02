@@ -117,5 +117,5 @@ $(TAG):
 	mkdir -p "$(TAG)"
 
 
-.PHONY: push test build
+.PHONY: push test build $(TAG)/Dockerfile
 .DEFAULT_GOAL := test
