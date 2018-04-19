@@ -23,17 +23,75 @@ location = /.aptible/alb-healthcheck {
     return 200 "";
   <% else %>
     content_by_lua_block {
-      local r = ngx.location.capture("@healthcheck");
+      function setStatusFromCache()
+        local cachedStatus, cachedStatusFlags = ngx.shared.health:get("status")
 
-      if r.status == 502 then
-        ngx.status = 502;
-      else
-      <% if ENV['STRICT_HEALTH_CHECKS'] == 'true' %>
-        ngx.status = r.status;
-      <% else %>
-        ngx.status = 200;
-      <% end %>
+        if cachedStatus then
+          ngx.log(ngx.INFO, "health: status from cache: " .. cachedStatus)
+          ngx.status = cachedStatus
+          ngx.say("cache:" .. cachedStatus)
+          return true
+        end
+
+        -- Second return value is actually the error here
+        if cachedStatusFlags then
+          ngx.log(ngx.ERROR, "health: status error: " .. cachedStatusFlags)
+        end
+
+        ngx.log(ngx.DEBUG, "health: no cache")
+
+        return false
       end
+
+      function setStatus()
+        if setStatusFromCache() then
+          return
+        end
+
+        -- If another request is currently running the health check,
+        -- wait a little before checking the cache again.
+        local hold, holdFlags = ngx.shared.health:get("hold")
+        if hold then
+          ngx.log(ngx.DEBUG, "health: hold")
+          ngx.sleep(1)
+          if setStatusFromCache() then
+            return
+          end
+        end
+
+        -- Tell other requests coming in during the next 2 seconds to hold while
+        -- we run the health check.
+        local holdOk, holdErr = ngx.shared.health:safe_set("hold", true, 2)
+        if not holdOk then
+          ngx.log(ngx.ERROR, "health: failed to set hold: " .. holdErr)
+        end
+
+        -- Make the actual upstream request
+        local r = ngx.location.capture("@healthcheck")
+        local upstreamStatus = r.status
+
+        -- Record our resulting status, make this valid for 5 seconds.
+        local statusOk, statusErr, forcible = ngx.shared.health:set("status", upstreamStatus, 5)
+        if not statusOk then
+          ngx.log(ngx.ERROR, "health: failed to set status: " .. statusErr)
+        end
+
+        ngx.log(ngx.INFO, "health: status from upstream: " .. upstreamStatus)
+
+        if upstreamStatus == 502 then
+          ngx.status = 502
+        else
+        <% if ENV['STRICT_HEALTH_CHECKS'] == 'true' %>
+          ngx.status = upstreamStatus
+        <% else %>
+          ngx.status = 200
+        <% end %>
+        end
+
+        ngx.say("upstream:" .. upstreamStatus)
+      end
+
+      setStatus()
     }
   <% end %>
 }

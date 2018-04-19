@@ -1,17 +1,42 @@
-#!/bin/sh
+#!/usr/bin/env ruby
+require 'socket'
+require 'thread'
 
-PORT="${UPSTREAM_PORT:-"4000"}"
-RESPONSE="$BATS_TEST_DIRNAME"/"${UPSTREAM_RESPONSE:-"upstream-response.txt"}"
-OUTPUT="${UPSTREAM_OUT:-"/tmp/$$.log"}"
-DELAY="${UPSTREAM_DELAY:-0}"
+Thread.abort_on_exception = true
 
-# inspired by
-# http://www.commandlinefu.com/commands/view/9164/one-command-line-web-server-on-port-80-using-nc-netcat
-echo > "$OUTPUT"
-while true; do
-  (
-    sleep "$DELAY"
-    cat "$RESPONSE"
-  ) | nc -l -p "$PORT" 127.0.0.1 >> "$OUTPUT"
-done
-rm -f "$OUTPUT"
+PORT = Integer(ENV.fetch('UPSTREAM_PORT', '4000'))
+RESPONSE = File.read(
+  File.join(
+    ENV.fetch('BATS_TEST_DIRNAME'),
+    ENV.fetch('UPSTREAM_RESPONSE', 'upstream-response.txt')
+  )
+)
+OUTPUT = ENV.fetch('UPSTREAM_OUT', "/tmp/#{Process.pid}.log")
+DELAY = if (d = ENV['UPSTREAM_DELAY'])
+          d.to_f
+        end
+
+puts "Logging to #{OUTPUT}"
+
+out = File.new(OUTPUT, 'w')
+
+server = TCPServer.new(PORT)
+mutex = Mutex.new
+
+loop do
+  Thread.start(server.accept) do |client|
+    lines = []
+    client.each_line do |l|
+      # We break at the first CRLF, which is the end of headers.
+      lines << l
+      break if l == "\r\n"
+    end
+    mutex.synchronize do
+      lines.each { |l| out.write(l) }
+      out.flush
+    end
+    sleep DELAY if DELAY
+    client.print(RESPONSE)
+    client.close
+  end
+end
