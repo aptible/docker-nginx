@@ -43,7 +43,7 @@ wait_for_proxy_protocol() {
 }
 
 local_s_client() {
-  echo OK | openssl s_client -connect localhost:443 $@
+  echo OK | openssl s_client -connect 127.0.0.1:443 $@
 }
 
 simulate_upstream() {
@@ -117,14 +117,14 @@ NGINX_VERSION=1.13.12
   skip
   install_heartbleed
   wait_for_nginx
-  Heartbleed localhost:443
+  Heartbleed 127.0.0.1:443
   uninstall_heartbleed
 }
 
 @test "It should accept large file uploads" {
   dd if=/dev/zero of=zeros.bin count=1024 bs=4096
   wait_for_nginx
-  run curl -k --form upload=@zeros.bin --form press=OK https://localhost:443/
+  run curl -k --form upload=@zeros.bin --form press=OK https://127.0.0.1:443/
   [ "$status" -eq "0" ]
   [[ ! "$output" =~ "413"  ]]
 }
@@ -138,7 +138,7 @@ NGINX_VERSION=1.13.12
 @test "It should log to STDOUT (HTTP + Proxy Protocol)" {
   PROXY_PROTOCOL=true wait_for_nginx
   wait_for_proxy_protocol
-  curl -H 'Host: test.host' localhost:8080 > /dev/null 2>&1
+  curl -H 'Host: test.host' 127.0.0.1:8080 > /dev/null 2>&1
   wait_for grep -i 'test.host' "$NGINX_OUT"
 }
 
@@ -156,7 +156,7 @@ NGINX_VERSION=1.13.12
   CIPHER="ECDHE-RSA-AES128-GCM-SHA256"
   PROXY_PROTOCOL=true wait_for_nginx
   wait_for_proxy_protocol
-  curl -k --tlsv1.2 --ciphers "$CIPHER" -H 'Host: test.host' https://localhost:8443 \
+  curl -k --tlsv1.2 --ciphers "$CIPHER" -H 'Host: test.host' https://127.0.0.1:8443 \
     > /dev/null 2>&1
   wait_for grep -i 'test.host' "$NGINX_OUT"
   wait_for grep -i 'TLSv1.2' "$NGINX_OUT"
@@ -164,7 +164,7 @@ NGINX_VERSION=1.13.12
 }
 
 @test "It should accept and configure a MAINTENANCE_PAGE_URL" {
-  UPSTREAM_SERVERS=localhost:4000 \
+  UPSTREAM_SERVERS=127.0.0.1:4000 \
     MAINTENANCE_PAGE_URL=https://www.aptible.com/404.html wait_for_nginx
   run curl localhost 2>/dev/null
   [[ "$output" =~ "@aptiblestatus" ]]
@@ -172,24 +172,24 @@ NGINX_VERSION=1.13.12
 
 @test "It should accept a list of UPSTREAM_SERVERS" {
   simulate_upstream
-  UPSTREAM_SERVERS=localhost:4000 wait_for_nginx
+  UPSTREAM_SERVERS=127.0.0.1:4000 wait_for_nginx
   run curl localhost 2>/dev/null
   [[ "$output" =~ "Hello World!" ]]
 }
 
 @test "It should accept a list of UPSTREAM_SERVERS (Proxy Protocol)" {
   simulate_upstream
-  PROXY_PROTOCOL=true UPSTREAM_SERVERS=localhost:4000 wait_for_nginx
+  PROXY_PROTOCOL=true UPSTREAM_SERVERS=127.0.0.1:4000 wait_for_nginx
   wait_for_proxy_protocol
-  run curl localhost:8080 2>/dev/null
+  run curl 127.0.0.1:8080 2>/dev/null
   [[ "$output" =~ "Hello World!" ]]
 }
 
 @test "It should handle HTTPS over Proxy Protocol" {
   simulate_upstream
-  PROXY_PROTOCOL=true UPSTREAM_SERVERS=localhost:4000 wait_for_nginx
+  PROXY_PROTOCOL=true UPSTREAM_SERVERS=127.0.0.1:4000 wait_for_nginx
   wait_for_proxy_protocol
-  run curl -k https://localhost:8443 2>/dev/null
+  run curl -k https://127.0.0.1:8443 2>/dev/null
   [[ "$output" =~ "Hello World!" ]]
 }
 
@@ -208,7 +208,7 @@ NGINX_VERSION=1.13.12
 
 @test "It should send a Strict-Transport-Security header with FORCE_SSL even on error responses" {
   UPSTREAM_RESPONSE="upstream-response-500.txt" simulate_upstream
-  UPSTREAM_SERVERS=localhost:4000 FORCE_SSL=true wait_for_nginx
+  UPSTREAM_SERVERS=127.0.0.1:4000 FORCE_SSL=true wait_for_nginx
   run curl -Ik https://localhost 2>/dev/null
   [[ "$output" =~ "Strict-Transport-Security: max-age=31536000" ]]
 }
@@ -283,7 +283,7 @@ NGINX_VERSION=1.13.12
 @test "It allows underscores in headers" {
   rm /tmp/nc.log || true
   nc -l -p 4000 127.0.0.1 > /tmp/nc.log &
-  UPSTREAM_SERVERS=localhost:4000 wait_for_nginx
+  UPSTREAM_SERVERS=127.0.0.1:4000 wait_for_nginx
   curl --header "NoUnderscores: true" --header "SOME_UNDERSCORES: true" --max-time 1 http://localhost
   run cat /tmp/nc.log
   [[ "$output" =~ "NoUnderscores: true" ]]
@@ -342,7 +342,7 @@ NGINX_VERSION=1.13.12
   # https://docs.newrelic.com/docs/apm/applications-menu/features/request-queue-server-configuration-examples#nginx
   rm /tmp/nc.log || true
   nc -l -p 4000 127.0.0.1 > /tmp/nc.log &
-  UPSTREAM_SERVERS=localhost:4000 wait_for_nginx
+  UPSTREAM_SERVERS=127.0.0.1:4000 wait_for_nginx
   curl --max-time 1 http://localhost
   run cat /tmp/nc.log
   [[ "$output" =~ "X-Request-Start: t=" ]]
@@ -350,7 +350,7 @@ NGINX_VERSION=1.13.12
 
 @test "It forces X-Forwarded-Proto = http for HTTP requests" {
   simulate_upstream
-  UPSTREAM_SERVERS=localhost:4000 wait_for_nginx
+  UPSTREAM_SERVERS=127.0.0.1:4000 wait_for_nginx
   curl -s -H 'X-Forwarded-Proto: https' http://localhost
 
   grep 'X-Forwarded-Proto: http' "$UPSTREAM_OUT"
@@ -360,7 +360,7 @@ NGINX_VERSION=1.13.12
 
 @test "It forces X-Forwarded-Proto = https for HTTPS requests" {
   simulate_upstream
-  UPSTREAM_SERVERS=localhost:4000 wait_for_nginx
+  UPSTREAM_SERVERS=127.0.0.1:4000 wait_for_nginx
   curl -sk -H 'X-Forwarded-Proto: http' https://localhost
 
   grep 'X-Forwarded-Proto: https' "$UPSTREAM_OUT"
@@ -368,7 +368,7 @@ NGINX_VERSION=1.13.12
 
 @test "It drops the Proxy header (HTTP)" {
   simulate_upstream
-  UPSTREAM_SERVERS=localhost:4000 wait_for_nginx
+  UPSTREAM_SERVERS=127.0.0.1:4000 wait_for_nginx
   curl -s -H 'Proxy: some' http://localhost
 
   run grep -i 'Proxy:' "$UPSTREAM_OUT"
@@ -377,7 +377,7 @@ NGINX_VERSION=1.13.12
 
 @test "It drops the Proxy header (HTTP, lowercase)" {
   simulate_upstream
-  UPSTREAM_SERVERS=localhost:4000 wait_for_nginx
+  UPSTREAM_SERVERS=127.0.0.1:4000 wait_for_nginx
   curl -s -H 'proxy: some' http://localhost
 
   run grep -i 'Proxy:' "$UPSTREAM_OUT"
@@ -386,7 +386,7 @@ NGINX_VERSION=1.13.12
 
 @test "It drops the Proxy header (HTTPS)" {
   simulate_upstream
-  UPSTREAM_SERVERS=localhost:4000 wait_for_nginx
+  UPSTREAM_SERVERS=127.0.0.1:4000 wait_for_nginx
   curl -sk -H 'Proxy: some' https://localhost
 
   run grep -i 'Proxy:' "$UPSTREAM_OUT"
@@ -395,7 +395,7 @@ NGINX_VERSION=1.13.12
 
 @test "It drops the X-Aptible-Health-Check header (HTTP)" {
   simulate_upstream
-  UPSTREAM_SERVERS=localhost:4000 wait_for_nginx
+  UPSTREAM_SERVERS=127.0.0.1:4000 wait_for_nginx
   curl -s -H 'X-Aptible-Health-Check: some' http://localhost
 
   wait_for grep -i 'get' "$UPSTREAM_OUT"
@@ -405,7 +405,7 @@ NGINX_VERSION=1.13.12
 
 @test "It drops the X-Aptible-Health-Check header (HTTPS)" {
   simulate_upstream
-  UPSTREAM_SERVERS=localhost:4000 wait_for_nginx
+  UPSTREAM_SERVERS=127.0.0.1:4000 wait_for_nginx
   curl -sk -H 'X-Aptible-Health-Check: some' https://localhost
 
   wait_for grep -i 'get' "$UPSTREAM_OUT"
@@ -415,7 +415,7 @@ NGINX_VERSION=1.13.12
 
 @test "It supports GZIP compression of responses" {
   simulate_upstream
-  UPSTREAM_SERVERS=localhost:4000 wait_for_nginx
+  UPSTREAM_SERVERS=127.0.0.1:4000 wait_for_nginx
   run curl -v --compressed localhost
   [[ "$status" -eq 0 ]]
   [[ "$output" =~ "Content-Encoding: gzip" ]]
@@ -423,7 +423,7 @@ NGINX_VERSION=1.13.12
 }
 
 @test "It includes an informative default error page" {
-  UPSTREAM_SERVERS=localhost:4000 wait_for_nginx
+  UPSTREAM_SERVERS=127.0.0.1:4000 wait_for_nginx
   run curl http://localhost
   [[ "$output" =~ "application crashed" ]]
   [[ "$output" =~ "you are a visitor" ]]
@@ -433,7 +433,7 @@ NGINX_VERSION=1.13.12
 @test "It redirects ACME requests if ACME_SERVER is set" {
   UPSTREAM_PORT=5000 UPSTREAM_RESPONSE="acme.txt" simulate_upstream
   simulate_upstream
-  ACME_SERVER=localhost:5000 UPSTREAM_SERVERS=localhost:4000 wait_for_nginx
+  ACME_SERVER=127.0.0.1:5000 UPSTREAM_SERVERS=127.0.0.1:4000 wait_for_nginx
   run curl "http://localhost/.well-known/acme-challenge/123"
   [[ "$output" =~ 'ACME Response' ]]
   run curl "http://localhost/"
@@ -446,7 +446,7 @@ NGINX_VERSION=1.13.12
 
   # NOTE: aptible.in won't actually resolve, but that's OK. What we need here is
   # a domain that will not rediredct any further. Not resolving achieves that.
-  ACME_REDIRECT_HOST=aptible.in UPSTREAM_SERVERS=localhost:4000 wait_for_nginx
+  ACME_REDIRECT_HOST=aptible.in UPSTREAM_SERVERS=127.0.0.1:4000 wait_for_nginx
 
   run curl -Ls -o /dev/null -w '%{url_effective}' "http://localhost/.well-known/acme-challenge/123"
   [[ "$output" = 'http://aptible.in/.well-known/acme-challenge/123' ]]
@@ -462,7 +462,7 @@ NGINX_VERSION=1.13.12
 @test "It does not redirect ACME requests if neither ACME_SERVER or ACME_REDIRECT_HOST is set" {
   UPSTREAM_PORT=5000 UPSTREAM_RESPONSE="acme.txt" simulate_upstream
   simulate_upstream
-  UPSTREAM_SERVERS=localhost:4000 wait_for_nginx
+  UPSTREAM_SERVERS=127.0.0.1:4000 wait_for_nginx
   run curl "http://localhost/.well-known/acme-challenge/123"
   [[ "$output" =~ 'Hello World!' ]]
   run curl "http://localhost/"
@@ -503,17 +503,17 @@ NGINX_VERSION=1.13.12
 
 @test "Port ${HEALTH_PORT}: Nginx accepts plain HTTP requests" {
   simulate_upstream
-  PROXY_PROTOCOL=true UPSTREAM_SERVERS=localhost:4000 wait_for_nginx
+  PROXY_PROTOCOL=true UPSTREAM_SERVERS=127.0.0.1:4000 wait_for_nginx
 
-  curl -fs "http://localhost:${HEALTH_PORT}/"
+  curl -fs "http://127.0.0.1:${HEALTH_PORT}/"
   wait_for grep -i 'get' "$UPSTREAM_OUT"
 }
 
 @test "Port ${HEALTH_PORT}: Nginx rewrites the request path to /healthcheck" {
   simulate_upstream
-  PROXY_PROTOCOL=true UPSTREAM_SERVERS=localhost:4000 wait_for_nginx
+  PROXY_PROTOCOL=true UPSTREAM_SERVERS=127.0.0.1:4000 wait_for_nginx
 
-  curl -fs "http://localhost:${HEALTH_PORT}/foo"
+  curl -fs "http://127.0.0.1:${HEALTH_PORT}/foo"
   wait_for grep 'GET /healthcheck' "$UPSTREAM_OUT"
 
   run grep -i 'foo' "$UPSTREAM_OUT"
@@ -522,9 +522,9 @@ NGINX_VERSION=1.13.12
 
 @test "Port ${HEALTH_PORT}: Nginx discards headers" {
   simulate_upstream
-  PROXY_PROTOCOL=true UPSTREAM_SERVERS=localhost:4000 wait_for_nginx
+  PROXY_PROTOCOL=true UPSTREAM_SERVERS=127.0.0.1:4000 wait_for_nginx
 
-  curl -fs -H 'Authorization: foo' "http://localhost:${HEALTH_PORT}/"
+  curl -fs -H 'Authorization: foo' "http://127.0.0.1:${HEALTH_PORT}/"
   wait_for grep -i 'get' "$UPSTREAM_OUT"
 
   run grep -i 'foo' "$UPSTREAM_OUT"
@@ -533,9 +533,9 @@ NGINX_VERSION=1.13.12
 
 @test "Port ${HEALTH_PORT}: Nginx sets X-Aptible-Health-Check" {
   simulate_upstream
-  PROXY_PROTOCOL=true UPSTREAM_SERVERS=localhost:4000 wait_for_nginx
+  PROXY_PROTOCOL=true UPSTREAM_SERVERS=127.0.0.1:4000 wait_for_nginx
 
-  curl -fs "http://localhost:${HEALTH_PORT}/"
+  curl -fs "http://127.0.0.1:${HEALTH_PORT}/"
   wait_for grep -i 'get' "$UPSTREAM_OUT"
 
   grep -i 'X-Aptible-Health-Check' "$UPSTREAM_OUT"
@@ -543,9 +543,9 @@ NGINX_VERSION=1.13.12
 
 @test "Port ${HEALTH_PORT}: Nginx rewrites the User-Agent header to Aptible Health Check" {
   simulate_upstream
-  PROXY_PROTOCOL=true UPSTREAM_SERVERS=localhost:4000 wait_for_nginx
+  PROXY_PROTOCOL=true UPSTREAM_SERVERS=127.0.0.1:4000 wait_for_nginx
 
-  curl -fs "http://localhost:${HEALTH_PORT}/"
+  curl -fs "http://127.0.0.1:${HEALTH_PORT}/"
   wait_for grep -i 'get' "$UPSTREAM_OUT"
 
   grep 'Aptible Health Check' "$UPSTREAM_OUT"
@@ -553,9 +553,9 @@ NGINX_VERSION=1.13.12
 
 @test "Port ${HEALTH_PORT}: Nginx discards the request body" {
   simulate_upstream
-  PROXY_PROTOCOL=true UPSTREAM_SERVERS=localhost:4000 wait_for_nginx
+  PROXY_PROTOCOL=true UPSTREAM_SERVERS=127.0.0.1:4000 wait_for_nginx
 
-  curl -fs --data "foo=bar" "http://localhost:${HEALTH_PORT}/"
+  curl -fs --data "foo=bar" "http://127.0.0.1:${HEALTH_PORT}/"
   wait_for grep -i 'get' "$UPSTREAM_OUT"
 
   run grep -i 'foo' "$UPSTREAM_OUT"
@@ -564,9 +564,9 @@ NGINX_VERSION=1.13.12
 
 @test "Port ${HEALTH_PORT}: Nginx discards the request method" {
   simulate_upstream
-  PROXY_PROTOCOL=true UPSTREAM_SERVERS=localhost:4000 wait_for_nginx
+  PROXY_PROTOCOL=true UPSTREAM_SERVERS=127.0.0.1:4000 wait_for_nginx
 
-  curl -fs -I "http://localhost:${HEALTH_PORT}/"
+  curl -fs -I "http://127.0.0.1:${HEALTH_PORT}/"
   wait_for grep -i 'get' "$UPSTREAM_OUT"
 
   run grep -i 'head' "$UPSTREAM_OUT"
@@ -575,76 +575,76 @@ NGINX_VERSION=1.13.12
 
 @test "Port ${HEALTH_PORT}: Nginx discards the response body" {
   simulate_upstream
-  PROXY_PROTOCOL=true UPSTREAM_SERVERS=localhost:4000 wait_for_nginx
+  PROXY_PROTOCOL=true UPSTREAM_SERVERS=127.0.0.1:4000 wait_for_nginx
   wait_for_proxy_protocol
 
-  run curl http://localhost:8080/
+  run curl http://127.0.0.1:8080/
   [[ "$output" =~ "Hello World!" ]]
 
-  run curl "http://localhost:${HEALTH_PORT}/"
+  run curl "http://127.0.0.1:${HEALTH_PORT}/"
   [[ ! "$output" =~ "Hello World!" ]]
 }
 
 @test "Port ${HEALTH_PORT}: Nginx returns a 502 if the upstream is not responding" {
-  PROXY_PROTOCOL=true UPSTREAM_SERVERS=localhost:4000 wait_for_nginx
+  PROXY_PROTOCOL=true UPSTREAM_SERVERS=127.0.0.1:4000 wait_for_nginx
 
-  run curl -sw "%{http_code}" "http://localhost:${HEALTH_PORT}/"
+  run curl -sw "%{http_code}" "http://127.0.0.1:${HEALTH_PORT}/"
   [[ "$output" -eq 502 ]]
 }
 
 @test "Port ${HEALTH_PORT}: Nginx returns a 200 if the upstream is returning a 200" {
   UPSTREAM_RESPONSE="upstream-response.txt" simulate_upstream
-  PROXY_PROTOCOL=true UPSTREAM_SERVERS=localhost:4000 wait_for_nginx
+  PROXY_PROTOCOL=true UPSTREAM_SERVERS=127.0.0.1:4000 wait_for_nginx
 
-  run curl -sw "%{http_code}" "http://localhost:${HEALTH_PORT}/"
+  run curl -sw "%{http_code}" "http://127.0.0.1:${HEALTH_PORT}/"
   [[ "$output" -eq 200 ]]
 }
 
 @test "Port ${HEALTH_PORT}: Nginx returns a 200 if the upstream is returning a 500" {
   UPSTREAM_RESPONSE="upstream-response-500.txt" simulate_upstream
-  PROXY_PROTOCOL=true UPSTREAM_SERVERS=localhost:4000 wait_for_nginx
+  PROXY_PROTOCOL=true UPSTREAM_SERVERS=127.0.0.1:4000 wait_for_nginx
 
-  run curl -sw "%{http_code}" "http://localhost:${HEALTH_PORT}/"
+  run curl -sw "%{http_code}" "http://127.0.0.1:${HEALTH_PORT}/"
   [[ "$output" -eq 200 ]]
 }
 
 @test "Port ${HEALTH_PORT}: Nginx returns a 200 if FORCE_HEALTHCHECK_SUCCESS = true" {
-  FORCE_HEALTHCHECK_SUCCESS=true PROXY_PROTOCOL=true UPSTREAM_SERVERS=localhost:4000 wait_for_nginx
+  FORCE_HEALTHCHECK_SUCCESS=true PROXY_PROTOCOL=true UPSTREAM_SERVERS=127.0.0.1:4000 wait_for_nginx
 
-  run curl -sw "%{http_code}" "http://localhost:${HEALTH_PORT}/"
+  run curl -sw "%{http_code}" "http://127.0.0.1:${HEALTH_PORT}/"
   [[ "$output" -eq 200 ]]
 }
 
 @test "Port ${HEALTH_PORT}: Nginx supports STRICT_HEALTH_CHECKS = true (200)" {
   simulate_upstream
-  STRICT_HEALTH_CHECKS=true PROXY_PROTOCOL=true UPSTREAM_SERVERS=localhost:4000 wait_for_nginx
+  STRICT_HEALTH_CHECKS=true PROXY_PROTOCOL=true UPSTREAM_SERVERS=127.0.0.1:4000 wait_for_nginx
   wait_for_proxy_protocol
 
-  status="$(curl -s -o /dev/null -w "%{http_code}" "http://localhost:${HEALTH_PORT}")"
+  status="$(curl -s -o /dev/null -w "%{http_code}" "http://127.0.0.1:${HEALTH_PORT}")"
   [[ "$status" == "200" ]]
 }
 
 @test "Port ${HEALTH_PORT}: Nginx supports STRICT_HEALTH_CHECKS = true (302)" {
   UPSTREAM_RESPONSE="upstream-response-302.txt" simulate_upstream
-  STRICT_HEALTH_CHECKS=true PROXY_PROTOCOL=true UPSTREAM_SERVERS=localhost:4000 wait_for_nginx
+  STRICT_HEALTH_CHECKS=true PROXY_PROTOCOL=true UPSTREAM_SERVERS=127.0.0.1:4000 wait_for_nginx
   wait_for_proxy_protocol
 
-  status="$(curl -s -o /dev/null -w "%{http_code}" "http://localhost:${HEALTH_PORT}")"
+  status="$(curl -s -o /dev/null -w "%{http_code}" "http://127.0.0.1:${HEALTH_PORT}")"
   [[ "$status" == "302" ]]
 }
 
 @test "Port ${HEALTH_PORT}: Nginx supports STRICT_HEALTH_CHECKS = true (500)" {
   UPSTREAM_RESPONSE="upstream-response-500.txt" simulate_upstream
-  STRICT_HEALTH_CHECKS=true PROXY_PROTOCOL=true UPSTREAM_SERVERS=localhost:4000 wait_for_nginx
+  STRICT_HEALTH_CHECKS=true PROXY_PROTOCOL=true UPSTREAM_SERVERS=127.0.0.1:4000 wait_for_nginx
   wait_for_proxy_protocol
 
-  status="$(curl -s -o /dev/null -w "%{http_code}" "http://localhost:${HEALTH_PORT}")"
+  status="$(curl -s -o /dev/null -w "%{http_code}" "http://127.0.0.1:${HEALTH_PORT}")"
   [[ "$status" == "500" ]]
 }
 
 @test "${HEALTH_ROUTE} (HTTP): Nginx rewrites the request path to /healthcheck" {
   simulate_upstream
-  UPSTREAM_SERVERS=localhost:4000 wait_for_nginx
+  UPSTREAM_SERVERS=127.0.0.1:4000 wait_for_nginx
 
   curl -fs "http://localhost/${HEALTH_ROUTE}"
   wait_for grep 'GET /healthcheck' "$UPSTREAM_OUT"
@@ -655,7 +655,7 @@ NGINX_VERSION=1.13.12
 
 @test "${HEALTH_ROUTE} (HTTP): Nginx discards headers" {
   simulate_upstream
-  UPSTREAM_SERVERS=localhost:4000 wait_for_nginx
+  UPSTREAM_SERVERS=127.0.0.1:4000 wait_for_nginx
 
   curl -fs -H 'Authorization: foo' "http://localhost/${HEALTH_ROUTE}"
   wait_for grep -i 'get' "$UPSTREAM_OUT"
@@ -666,7 +666,7 @@ NGINX_VERSION=1.13.12
 
 @test "${HEALTH_ROUTE} (HTTP): Nginx sets X-Aptible-Health-Check" {
   simulate_upstream
-  UPSTREAM_SERVERS=localhost:4000 wait_for_nginx
+  UPSTREAM_SERVERS=127.0.0.1:4000 wait_for_nginx
 
   curl -fs -H 'Authorization: foo' "http://localhost/${HEALTH_ROUTE}"
   wait_for grep -i 'get' "$UPSTREAM_OUT"
@@ -676,7 +676,7 @@ NGINX_VERSION=1.13.12
 
 @test "${HEALTH_ROUTE} (HTTP): Nginx rewrites the User-Agent header to Aptible Health Check" {
   simulate_upstream
-  UPSTREAM_SERVERS=localhost:4000 wait_for_nginx
+  UPSTREAM_SERVERS=127.0.0.1:4000 wait_for_nginx
 
   curl -fs "http://localhost/${HEALTH_ROUTE}"
   wait_for grep -i 'get' "$UPSTREAM_OUT"
@@ -687,7 +687,7 @@ NGINX_VERSION=1.13.12
 
 @test "${HEALTH_ROUTE} (HTTP): Nginx discards the request body" {
   simulate_upstream
-  UPSTREAM_SERVERS=localhost:4000 wait_for_nginx
+  UPSTREAM_SERVERS=127.0.0.1:4000 wait_for_nginx
 
   curl -fs --data "foo=bar" "http://localhost/${HEALTH_ROUTE}"
   wait_for grep -i 'get' "$UPSTREAM_OUT"
@@ -698,7 +698,7 @@ NGINX_VERSION=1.13.12
 
 @test "${HEALTH_ROUTE} (HTTP): Nginx discards the request method" {
   simulate_upstream
-  UPSTREAM_SERVERS=localhost:4000 wait_for_nginx
+  UPSTREAM_SERVERS=127.0.0.1:4000 wait_for_nginx
 
   curl -fs -I "http://localhost/${HEALTH_ROUTE}"
   wait_for grep -i 'get' "$UPSTREAM_OUT"
@@ -709,7 +709,7 @@ NGINX_VERSION=1.13.12
 
 @test "${HEALTH_ROUTE} (HTTP): Nginx discards the response body" {
   simulate_upstream
-  UPSTREAM_SERVERS=localhost:4000 wait_for_nginx
+  UPSTREAM_SERVERS=127.0.0.1:4000 wait_for_nginx
 
   run curl "http://localhost"
   [[ "$output" =~ "Hello World!" ]]
@@ -719,7 +719,7 @@ NGINX_VERSION=1.13.12
 }
 
 @test "${HEALTH_ROUTE} (HTTP): Nginx returns a 502 if the upstream is not responding" {
-  UPSTREAM_SERVERS=localhost:4000 wait_for_nginx
+  UPSTREAM_SERVERS=127.0.0.1:4000 wait_for_nginx
 
   run curl -o /dev/null -sw "%{http_code}" "http://localhost/${HEALTH_ROUTE}"
   [[ "$output" -eq 502 ]]
@@ -727,7 +727,7 @@ NGINX_VERSION=1.13.12
 
 @test "${HEALTH_ROUTE} (HTTP): Nginx returns a 200 if the upstream is returning a 200" {
   UPSTREAM_RESPONSE="upstream-response.txt" simulate_upstream
-  UPSTREAM_SERVERS=localhost:4000 wait_for_nginx
+  UPSTREAM_SERVERS=127.0.0.1:4000 wait_for_nginx
 
   run curl -o /dev/null -sw "%{http_code}" "http://localhost/${HEALTH_ROUTE}"
   [[ "$output" -eq 200 ]]
@@ -735,14 +735,14 @@ NGINX_VERSION=1.13.12
 
 @test "${HEALTH_ROUTE} (HTTP): Nginx returns a 200 if the upstream is returning a 500" {
   UPSTREAM_RESPONSE="upstream-response-500.txt" simulate_upstream
-  UPSTREAM_SERVERS=localhost:4000 wait_for_nginx
+  UPSTREAM_SERVERS=127.0.0.1:4000 wait_for_nginx
 
   run curl -o /dev/null -sw "%{http_code}" "http://localhost/${HEALTH_ROUTE}"
   [[ "$output" -eq 200 ]]
 }
 
 @test "${HEALTH_ROUTE} (HTTP): Nginx returns a 200 if FORCE_HEALTHCHECK_SUCCESS = true" {
-  FORCE_HEALTHCHECK_SUCCESS=true UPSTREAM_SERVERS=localhost:4000 wait_for_nginx
+  FORCE_HEALTHCHECK_SUCCESS=true UPSTREAM_SERVERS=127.0.0.1:4000 wait_for_nginx
 
   run curl -o /dev/null -sw "%{http_code}" "http://localhost/${HEALTH_ROUTE}"
   [[ "$output" -eq 200 ]]
@@ -750,7 +750,7 @@ NGINX_VERSION=1.13.12
 
 @test "${HEALTH_ROUTE} (HTTP): Nginx does not redirect even when FORCE_SSL is set" {
   simulate_upstream
-  FORCE_SSL=true UPSTREAM_SERVERS=localhost:4000 wait_for_nginx
+  FORCE_SSL=true UPSTREAM_SERVERS=127.0.0.1:4000 wait_for_nginx
 
   run curl -o /dev/null -sw "%{http_code}" "http://localhost/${HEALTH_ROUTE}"
   [[ "$output" -eq 200 ]]
@@ -758,7 +758,7 @@ NGINX_VERSION=1.13.12
 
 @test "${HEALTH_ROUTE} (HTTP): Nginx supports STRICT_HEALTH_CHECKS = true (200)" {
   simulate_upstream
-  STRICT_HEALTH_CHECKS=true UPSTREAM_SERVERS=localhost:4000 wait_for_nginx
+  STRICT_HEALTH_CHECKS=true UPSTREAM_SERVERS=127.0.0.1:4000 wait_for_nginx
 
   status="$(curl -s -o /dev/null -w "%{http_code}" "http://localhost/${HEALTH_ROUTE}")"
   [[ "$status" == "200" ]]
@@ -766,7 +766,7 @@ NGINX_VERSION=1.13.12
 
 @test "${HEALTH_ROUTE} (HTTP): Nginx supports STRICT_HEALTH_CHECKS = true (302)" {
   UPSTREAM_RESPONSE="upstream-response-302.txt" simulate_upstream
-  STRICT_HEALTH_CHECKS=true UPSTREAM_SERVERS=localhost:4000 wait_for_nginx
+  STRICT_HEALTH_CHECKS=true UPSTREAM_SERVERS=127.0.0.1:4000 wait_for_nginx
 
   status="$(curl -s -o /dev/null -w "%{http_code}" "http://localhost/${HEALTH_ROUTE}")"
   [[ "$status" == "302" ]]
@@ -774,7 +774,7 @@ NGINX_VERSION=1.13.12
 
 @test "${HEALTH_ROUTE} (HTTP): Nginx supports STRICT_HEALTH_CHECKS = true (500)" {
   UPSTREAM_RESPONSE="upstream-response-500.txt" simulate_upstream
-  STRICT_HEALTH_CHECKS=true UPSTREAM_SERVERS=localhost:4000 wait_for_nginx
+  STRICT_HEALTH_CHECKS=true UPSTREAM_SERVERS=127.0.0.1:4000 wait_for_nginx
 
   status="$(curl -s -o /dev/null -w "%{http_code}" "http://localhost/${HEALTH_ROUTE}")"
   [[ "$status" == "500" ]]
@@ -782,7 +782,7 @@ NGINX_VERSION=1.13.12
 
 @test "${HEALTH_ROUTE} (HTTPS): Nginx discards headers" {
   simulate_upstream
-  UPSTREAM_SERVERS=localhost:4000 wait_for_nginx
+  UPSTREAM_SERVERS=127.0.0.1:4000 wait_for_nginx
 
   curl -fsk -H 'Authorization: foo' "https://localhost/${HEALTH_ROUTE}"
   wait_for grep -i 'get' "$UPSTREAM_OUT"
@@ -793,7 +793,7 @@ NGINX_VERSION=1.13.12
 
 @test "${HEALTH_ROUTE} (HTTPS): Nginx sets X-Aptible-Health-Check" {
   simulate_upstream
-  UPSTREAM_SERVERS=localhost:4000 wait_for_nginx
+  UPSTREAM_SERVERS=127.0.0.1:4000 wait_for_nginx
 
   curl -fsk "https://localhost/${HEALTH_ROUTE}"
   wait_for grep -i 'get' "$UPSTREAM_OUT"
@@ -803,7 +803,7 @@ NGINX_VERSION=1.13.12
 
 @test "${HEALTH_ROUTE} (HTTPS): Nginx rewrites the User-Agent header to Aptible Health Check" {
   simulate_upstream
-  UPSTREAM_SERVERS=localhost:4000 wait_for_nginx
+  UPSTREAM_SERVERS=127.0.0.1:4000 wait_for_nginx
 
   curl -fsk "https://localhost/${HEALTH_ROUTE}"
   wait_for grep -i 'get' "$UPSTREAM_OUT"
@@ -814,7 +814,7 @@ NGINX_VERSION=1.13.12
 
 @test "${HEALTH_ROUTE} (HTTPS): Nginx discards the request body" {
   simulate_upstream
-  UPSTREAM_SERVERS=localhost:4000 wait_for_nginx
+  UPSTREAM_SERVERS=127.0.0.1:4000 wait_for_nginx
 
   curl -fsk --data "foo=bar" "https://localhost/${HEALTH_ROUTE}"
   wait_for grep -i 'get' "$UPSTREAM_OUT"
@@ -825,7 +825,7 @@ NGINX_VERSION=1.13.12
 
 @test "${HEALTH_ROUTE} (HTTPS): Nginx discards the request method" {
   simulate_upstream
-  UPSTREAM_SERVERS=localhost:4000 wait_for_nginx
+  UPSTREAM_SERVERS=127.0.0.1:4000 wait_for_nginx
 
   curl -fsk -I "https://localhost/${HEALTH_ROUTE}"
   wait_for grep -i 'get' "$UPSTREAM_OUT"
@@ -836,7 +836,7 @@ NGINX_VERSION=1.13.12
 
 @test "${HEALTH_ROUTE} (HTTPS): Nginx discards the response body" {
   simulate_upstream
-  UPSTREAM_SERVERS=localhost:4000 wait_for_nginx
+  UPSTREAM_SERVERS=127.0.0.1:4000 wait_for_nginx
 
   run curl -k "https://localhost"
   [[ "$output" =~ "Hello World!" ]]
@@ -846,7 +846,7 @@ NGINX_VERSION=1.13.12
 }
 
 @test "${HEALTH_ROUTE} (HTTPS): Nginx returns a 502 if the upstream is not responding" {
-  UPSTREAM_SERVERS=localhost:4000 wait_for_nginx
+  UPSTREAM_SERVERS=127.0.0.1:4000 wait_for_nginx
 
   run curl -o /dev/null -skw "%{http_code}" "https://localhost/${HEALTH_ROUTE}"
   [[ "$output" -eq 502 ]]
@@ -854,7 +854,7 @@ NGINX_VERSION=1.13.12
 
 @test "${HEALTH_ROUTE} (HTTPS): Nginx returns a 200 if the upstream is returning a 200" {
   UPSTREAM_RESPONSE="upstream-response.txt" simulate_upstream
-  UPSTREAM_SERVERS=localhost:4000 wait_for_nginx
+  UPSTREAM_SERVERS=127.0.0.1:4000 wait_for_nginx
 
   run curl -o /dev/null -skw "%{http_code}" "https://localhost/${HEALTH_ROUTE}"
   [[ "$output" -eq 200 ]]
@@ -862,14 +862,14 @@ NGINX_VERSION=1.13.12
 
 @test "${HEALTH_ROUTE} (HTTPS): Nginx returns a 200 if the upstream is returning a 500" {
   UPSTREAM_RESPONSE="upstream-response-500.txt" simulate_upstream
-  UPSTREAM_SERVERS=localhost:4000 wait_for_nginx
+  UPSTREAM_SERVERS=127.0.0.1:4000 wait_for_nginx
 
   run curl -o /dev/null -skw "%{http_code}" "https://localhost/${HEALTH_ROUTE}"
   [[ "$output" -eq 200 ]]
 }
 
 @test "${HEALTH_ROUTE} (HTTPS): Nginx returns a 200 if FORCE_HEALTHCHECK_SUCCESS = true" {
-  FORCE_HEALTHCHECK_SUCCESS=true UPSTREAM_SERVERS=localhost:4000 wait_for_nginx
+  FORCE_HEALTHCHECK_SUCCESS=true UPSTREAM_SERVERS=127.0.0.1:4000 wait_for_nginx
 
   run curl -o /dev/null -skw "%{http_code}" "https://localhost/${HEALTH_ROUTE}"
   [[ "$output" -eq 200 ]]
@@ -877,7 +877,7 @@ NGINX_VERSION=1.13.12
 
 @test "${HEALTH_ROUTE} (HTTPS): Nginx supports STRICT_HEALTH_CHECKS = true (200)" {
   simulate_upstream
-  STRICT_HEALTH_CHECKS=true UPSTREAM_SERVERS=localhost:4000 wait_for_nginx
+  STRICT_HEALTH_CHECKS=true UPSTREAM_SERVERS=127.0.0.1:4000 wait_for_nginx
 
   status="$(curl -k -s -o /dev/null -w "%{http_code}" "https://localhost/${HEALTH_ROUTE}")"
   [[ "$status" == "200" ]]
@@ -885,7 +885,7 @@ NGINX_VERSION=1.13.12
 
 @test "${HEALTH_ROUTE} (HTTPS): Nginx supports STRICT_HEALTH_CHECKS = true (302)" {
   UPSTREAM_RESPONSE="upstream-response-302.txt" simulate_upstream
-  STRICT_HEALTH_CHECKS=true UPSTREAM_SERVERS=localhost:4000 wait_for_nginx
+  STRICT_HEALTH_CHECKS=true UPSTREAM_SERVERS=127.0.0.1:4000 wait_for_nginx
 
   status="$(curl -k -s -o /dev/null -w "%{http_code}" "https://localhost/${HEALTH_ROUTE}")"
   [[ "$status" == "302" ]]
@@ -893,7 +893,7 @@ NGINX_VERSION=1.13.12
 
 @test "${HEALTH_ROUTE} (HTTPS): Nginx supports STRICT_HEALTH_CHECKS = true (500)" {
   UPSTREAM_RESPONSE="upstream-response-500.txt" simulate_upstream
-  STRICT_HEALTH_CHECKS=true UPSTREAM_SERVERS=localhost:4000 wait_for_nginx
+  STRICT_HEALTH_CHECKS=true UPSTREAM_SERVERS=127.0.0.1:4000 wait_for_nginx
 
   status="$(curl -k -s -o /dev/null -w "%{http_code}" "https://localhost/${HEALTH_ROUTE}")"
   [[ "$status" == "500" ]]
@@ -901,7 +901,7 @@ NGINX_VERSION=1.13.12
 
 @test "${HEALTH_ROUTE} (HTTPS): Nginx rewrites the request path to /healthcheck" {
   simulate_upstream
-  UPSTREAM_SERVERS=localhost:4000 wait_for_nginx
+  UPSTREAM_SERVERS=127.0.0.1:4000 wait_for_nginx
 
   curl -fsk "https://localhost/${HEALTH_ROUTE}"
   wait_for grep 'GET /healthcheck' "$UPSTREAM_OUT"
@@ -996,7 +996,7 @@ NGINX_VERSION=1.13.12
 
 @test "it applies a default KEEPALIVE_TIMEOUT of 5 seconds (HTTP)" {
   simulate_upstream
-  UPSTREAM_SERVERS=localhost:4000 wait_for_nginx
+  UPSTREAM_SERVERS=127.0.0.1:4000 wait_for_nginx
 
   # We're going to make 3 requests, but the last request will come in 8 seconds
   # after the second one. As a result, we should only see 2 requests on the
@@ -1012,7 +1012,7 @@ NGINX_VERSION=1.13.12
 
 @test "it applies a default KEEPALIVE_TIMEOUT of 5 seconds (HTTPS)" {
   simulate_upstream
-  UPSTREAM_SERVERS=localhost:4000 wait_for_nginx
+  UPSTREAM_SERVERS=127.0.0.1:4000 wait_for_nginx
 
   # Same as above
   "${BATS_TEST_DIRNAME}/connect-keepalive" https 8
@@ -1025,7 +1025,7 @@ NGINX_VERSION=1.13.12
 
 @test "it allows setting a custom KEEPALIVE_TIMEOUT (HTTP)" {
   simulate_upstream
-  KEEPALIVE_TIMEOUT=60 UPSTREAM_SERVERS=localhost:4000 wait_for_nginx
+  KEEPALIVE_TIMEOUT=60 UPSTREAM_SERVERS=127.0.0.1:4000 wait_for_nginx
 
   # This time, we should see all 3 requests
   "${BATS_TEST_DIRNAME}/connect-keepalive" http 8
@@ -1038,7 +1038,7 @@ NGINX_VERSION=1.13.12
 
 @test "it allows setting a custom KEEPALIVE_TIMEOUT (HTTPS)" {
   simulate_upstream
-  KEEPALIVE_TIMEOUT=60 UPSTREAM_SERVERS=localhost:4000 wait_for_nginx
+  KEEPALIVE_TIMEOUT=60 UPSTREAM_SERVERS=127.0.0.1:4000 wait_for_nginx
 
   # This time, we should see all 3 requests
   "${BATS_TEST_DIRNAME}/connect-keepalive" https 8
@@ -1051,7 +1051,7 @@ NGINX_VERSION=1.13.12
 
 @test "it ignores an invalid KEEPALIVE_TIMEOUT" {
   simulate_upstream
-  KEEPALIVE_TIMEOUT="20+FOOBAR" UPSTREAM_SERVERS=localhost:4000 wait_for_nginx
+  KEEPALIVE_TIMEOUT="20+FOOBAR" UPSTREAM_SERVERS=127.0.0.1:4000 wait_for_nginx
   wait_for_proxy_protocol
 
   # Same as default test
@@ -1067,28 +1067,28 @@ NGINX_VERSION=1.13.12
 
 @test "it allows setting a custom PROXY_IDLE_TIMEOUT (HTTP)" {
   UPSTREAM_DELAY=5 simulate_upstream
-  PROXY_IDLE_TIMEOUT=1 UPSTREAM_SERVERS=localhost:4000 wait_for_nginx
+  PROXY_IDLE_TIMEOUT=1 UPSTREAM_SERVERS=127.0.0.1:4000 wait_for_nginx
   return_code="$(curl -s -o /dev/null -w "%{http_code}" "http://localhost")"
-  [[ "$return_code" == "504" ]]
+  [[ "$return_code" == "502" ]] || [[ "$return_code" == "504" ]]
 }
 
 @test "it allows setting a custom PROXY_IDLE_TIMEOUT (HTTPS)" {
   UPSTREAM_DELAY=5 simulate_upstream
-  PROXY_IDLE_TIMEOUT=1 UPSTREAM_SERVERS=localhost:4000 wait_for_nginx
+  PROXY_IDLE_TIMEOUT=1 UPSTREAM_SERVERS=127.0.0.1:4000 wait_for_nginx
   return_code="$(curl -sk -o /dev/null -w "%{http_code}" "https://localhost")"
-  [[ "$return_code" == "504" ]]
+  [[ "$return_code" == "502" ]] || [[ "$return_code" == "504" ]]
 }
 
 @test "it tolerates a slow upstream when PROXY_IDLE_TIMEOUT is set" {
   UPSTREAM_DELAY=5 simulate_upstream
-  PROXY_IDLE_TIMEOUT=10 UPSTREAM_SERVERS=localhost:4000 wait_for_nginx
+  PROXY_IDLE_TIMEOUT=10 UPSTREAM_SERVERS=127.0.0.1:4000 wait_for_nginx
   run curl localhost 2>/dev/null
   [[ "$output" =~ "Hello World!" ]]
 }
 
 @test "it tolerates a slow upstream when PROXY_IDLE_TIMEOUT is not set" {
   UPSTREAM_DELAY=5 simulate_upstream
-  UPSTREAM_SERVERS=localhost:4000 wait_for_nginx
+  UPSTREAM_SERVERS=127.0.0.1:4000 wait_for_nginx
   run curl localhost 2>/dev/null
   [[ "$output" =~ "Hello World!" ]]
 }
