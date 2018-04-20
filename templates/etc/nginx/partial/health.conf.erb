@@ -68,7 +68,19 @@ location = /.aptible/alb-healthcheck {
 
         -- Make the actual upstream request
         local r = ngx.location.capture("@healthcheck")
-        local upstreamStatus = r.status
+
+        -- Decide what this status means
+        local upstreamStatus
+
+        if r.status == 502 then
+          upstreamStatus = r.status
+        else
+        <% if ENV['STRICT_HEALTH_CHECKS'] == 'true' %>
+          upstreamStatus = r.status
+        <% else %>
+          upstreamStatus = 200
+        <% end %>
+        end
 
         -- Record our resulting status, make this valid for 5 seconds.
         local statusOk, statusErr, forcible = ngx.shared.health:set("status", upstreamStatus, 5)
@@ -76,18 +88,10 @@ location = /.aptible/alb-healthcheck {
           ngx.log(ngx.ERROR, "health: failed to set status: " .. statusErr)
         end
 
-        ngx.log(ngx.INFO, "health: status from upstream: " .. upstreamStatus)
+        ngx.log(ngx.INFO, "health: derived status from upstream: " .. upstreamStatus)
+        ngx.log(ngx.DEBUG, "health: real status from upstream: " .. r.status)
 
-        if upstreamStatus == 502 then
-          ngx.status = 502
-        else
-        <% if ENV['STRICT_HEALTH_CHECKS'] == 'true' %>
-          ngx.status = upstreamStatus
-        <% else %>
-          ngx.status = 200
-        <% end %>
-        end
-
+        ngx.status = upstreamStatus
         ngx.say("upstream:" .. upstreamStatus)
       end
 

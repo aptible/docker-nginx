@@ -910,7 +910,7 @@ NGINX_VERSION=1.10.1
   [[ "$status" -eq 1 ]]
 }
 
-@test "${HEALTH_ROUTE}: Nginx debounces health checks" {
+@test "${HEALTH_ROUTE}: Nginx debounces health checks (200)" {
   simulate_upstream
   UPSTREAM_SERVERS=localhost:4000 wait_for_nginx
 
@@ -923,6 +923,34 @@ NGINX_VERSION=1.10.1
   sh -c "curl -fs '$url' | grep cache:200"
   sh -c "curl -fs '$url' | grep cache:200"
   sh -c "curl -fs '$url' | grep cache:200"
+
+  n="$(grep "GET /healthcheck" "$UPSTREAM_OUT" | wc -l)"
+  [[ "$n" -eq 1 ]]
+}
+
+@test "${HEALTH_ROUTE}: Nginx debounces health checks (500, non strict)" {
+  UPSTREAM_RESPONSE="upstream-response-500.txt" simulate_upstream
+  UPSTREAM_SERVERS=localhost:4000 wait_for_nginx
+
+  url="http://localhost/${HEALTH_ROUTE}"
+  sh -c "curl -fs '$url' | grep upstream:200"
+  sh -c "curl -fs '$url' | grep cache:200"
+  sh -c "curl -fs '$url' | grep cache:200"
+  sh -c "curl -fs '$url' | grep cache:200"
+
+  n="$(grep "GET /healthcheck" "$UPSTREAM_OUT" | wc -l)"
+  [[ "$n" -eq 1 ]]
+}
+
+@test "${HEALTH_ROUTE}: Nginx debounces health checks (500, strict)" {
+  UPSTREAM_RESPONSE="upstream-response-500.txt" simulate_upstream
+  STRICT_HEALTH_CHECKS=true UPSTREAM_SERVERS=localhost:4000 wait_for_nginx
+
+  url="http://localhost/${HEALTH_ROUTE}"
+  sh -c "curl -s '$url' | grep upstream:500"
+  sh -c "curl -s '$url' | grep cache:500"
+  sh -c "curl -s '$url' | grep cache:500"
+  sh -c "curl -s '$url' | grep cache:500"
 
   n="$(grep "GET /healthcheck" "$UPSTREAM_OUT" | wc -l)"
   [[ "$n" -eq 1 ]]
