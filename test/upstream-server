@@ -25,18 +25,25 @@ mutex = Mutex.new
 
 loop do
   Thread.start(server.accept) do |client|
-    lines = []
-    client.each_line do |l|
-      # We break at the first CRLF, which is the end of headers.
-      lines << l
-      break if l == "\r\n"
+    begin
+      loop do
+        lines = []
+        client.each_line do |l|
+          # We break at the first CRLF, which is the end of headers.
+          lines << l
+          break if l == "\r\n"
+        end
+        mutex.synchronize do
+          lines.each { |l| out.write(l) }
+          out.flush
+        end
+        sleep DELAY if DELAY
+        client.print(RESPONSE)
+      end
+    rescue Errno::EPIPE
+      # No-op
+    ensure
+      client.close
     end
-    mutex.synchronize do
-      lines.each { |l| out.write(l) }
-      out.flush
-    end
-    sleep DELAY if DELAY
-    client.print(RESPONSE)
-    client.close
   end
 end

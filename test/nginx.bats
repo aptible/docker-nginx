@@ -965,7 +965,6 @@ HEALTH_ROUTE=.aptible/alb-healthcheck
 @test "it applies a default KEEPALIVE_TIMEOUT of 5 seconds (HTTP)" {
   simulate_upstream
   UPSTREAM_SERVERS=localhost:4000 wait_for_nginx
-  wait_for_proxy_protocol
 
   # We're going to make 3 requests, but the last request will come in 8 seconds
   # after the second one. As a result, we should only see 2 requests on the
@@ -982,7 +981,6 @@ HEALTH_ROUTE=.aptible/alb-healthcheck
 @test "it applies a default KEEPALIVE_TIMEOUT of 5 seconds (HTTPS)" {
   simulate_upstream
   UPSTREAM_SERVERS=localhost:4000 wait_for_nginx
-  wait_for_proxy_protocol
 
   # Same as above
   "${BATS_TEST_DIRNAME}/connect-keepalive" https 8
@@ -996,7 +994,6 @@ HEALTH_ROUTE=.aptible/alb-healthcheck
 @test "it allows setting a custom KEEPALIVE_TIMEOUT (HTTP)" {
   simulate_upstream
   KEEPALIVE_TIMEOUT=60 UPSTREAM_SERVERS=localhost:4000 wait_for_nginx
-  wait_for_proxy_protocol
 
   # This time, we should see all 3 requests
   "${BATS_TEST_DIRNAME}/connect-keepalive" http 8
@@ -1010,7 +1007,6 @@ HEALTH_ROUTE=.aptible/alb-healthcheck
 @test "it allows setting a custom KEEPALIVE_TIMEOUT (HTTPS)" {
   simulate_upstream
   KEEPALIVE_TIMEOUT=60 UPSTREAM_SERVERS=localhost:4000 wait_for_nginx
-  wait_for_proxy_protocol
 
   # This time, we should see all 3 requests
   "${BATS_TEST_DIRNAME}/connect-keepalive" https 8
