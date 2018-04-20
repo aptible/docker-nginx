@@ -3,6 +3,9 @@
 export UPSTREAM_OUT="/tmp/app.log"
 export NGINX_OUT="/tmp/nginx.log"
 
+HEALTH_PORT="9000"
+HEALTH_ROUTE=.aptible/alb-healthcheck
+
 install_heartbleed() {
   export GOPATH=/tmp/gocode
   export PATH=${PATH}:/usr/local/go/bin:${GOPATH}/bin
@@ -498,8 +501,6 @@ NGINX_VERSION=1.10.1
   [[ "$output" =~ "Strict-Transport-Security:" ]]
 }
 
-HEALTH_PORT="9000"
-
 @test "Port ${HEALTH_PORT}: Nginx accepts plain HTTP requests" {
   simulate_upstream
   PROXY_PROTOCOL=true UPSTREAM_SERVERS=localhost:4000 wait_for_nginx
@@ -640,8 +641,6 @@ HEALTH_PORT="9000"
   status="$(curl -s -o /dev/null -w "%{http_code}" "http://localhost:${HEALTH_PORT}")"
   [[ "$status" == "500" ]]
 }
-
-HEALTH_ROUTE=.aptible/alb-healthcheck
 
 @test "${HEALTH_ROUTE} (HTTP): Nginx rewrites the request path to /healthcheck" {
   simulate_upstream
@@ -915,10 +914,15 @@ HEALTH_ROUTE=.aptible/alb-healthcheck
   simulate_upstream
   UPSTREAM_SERVERS=localhost:4000 wait_for_nginx
 
-  curl -fs "http://localhost/${HEALTH_ROUTE}" | grep upstream:200
-  curl -fs "http://localhost/${HEALTH_ROUTE}" | grep cache:200
-  curl -fs "http://localhost/${HEALTH_ROUTE}" | grep cache:200
-  curl -fs "http://localhost/${HEALTH_ROUTE}" | grep cache:200
+  # So... we can't use a pipe in our tests here, because that blows up in
+  # Travis (it hangs forever doing nothing). This is an issue in BATS we've
+  # encountered a number of times in the past. We work around the problem by
+  # spawning a shell to run the pipe for us...
+  url="http://localhost/${HEALTH_ROUTE}"
+  sh -c "curl -fs '$url' | grep upstream:200"
+  sh -c "curl -fs '$url' | grep cache:200"
+  sh -c "curl -fs '$url' | grep cache:200"
+  sh -c "curl -fs '$url' | grep cache:200"
 
   n="$(grep "GET /healthcheck" "$UPSTREAM_OUT" | wc -l)"
   [[ "$n" -eq 1 ]]
