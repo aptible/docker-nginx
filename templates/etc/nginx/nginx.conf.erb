@@ -52,6 +52,8 @@ http {
 
   server_tokens off;
 
+  lua_shared_dict health 128k;
+
   include /etc/nginx/conf.d/*.conf;
   include /etc/nginx/sites-enabled/*.conf;
 }

@@ -3,6 +3,9 @@
 export UPSTREAM_OUT="/tmp/app.log"
 export NGINX_OUT="/tmp/nginx.log"
 
+HEALTH_PORT="9000"
+HEALTH_ROUTE=.aptible/alb-healthcheck
+
 install_heartbleed() {
   export GOPATH=/tmp/gocode
   export PATH=${PATH}:/usr/local/go/bin:${GOPATH}/bin
@@ -498,8 +501,6 @@ NGINX_VERSION=1.10.1
   [[ "$output" =~ "Strict-Transport-Security:" ]]
 }
 
-HEALTH_PORT="9000"
-
 @test "Port ${HEALTH_PORT}: Nginx accepts plain HTTP requests" {
   simulate_upstream
   PROXY_PROTOCOL=true UPSTREAM_SERVERS=localhost:4000 wait_for_nginx
@@ -641,8 +642,6 @@ HEALTH_PORT="9000"
   [[ "$status" == "500" ]]
 }
 
-HEALTH_ROUTE=.aptible/alb-healthcheck
-
 @test "${HEALTH_ROUTE} (HTTP): Nginx rewrites the request path to /healthcheck" {
   simulate_upstream
   UPSTREAM_SERVERS=localhost:4000 wait_for_nginx
@@ -722,7 +721,7 @@ HEALTH_ROUTE=.aptible/alb-healthcheck
 @test "${HEALTH_ROUTE} (HTTP): Nginx returns a 502 if the upstream is not responding" {
   UPSTREAM_SERVERS=localhost:4000 wait_for_nginx
 
-  run curl -sw "%{http_code}" "http://localhost/${HEALTH_ROUTE}"
+  run curl -o /dev/null -sw "%{http_code}" "http://localhost/${HEALTH_ROUTE}"
   [[ "$output" -eq 502 ]]
 }
 
@@ -730,7 +729,7 @@ HEALTH_ROUTE=.aptible/alb-healthcheck
   UPSTREAM_RESPONSE="upstream-response.txt" simulate_upstream
   UPSTREAM_SERVERS=localhost:4000 wait_for_nginx
 
-  run curl -sw "%{http_code}" "http://localhost/${HEALTH_ROUTE}"
+  run curl -o /dev/null -sw "%{http_code}" "http://localhost/${HEALTH_ROUTE}"
   [[ "$output" -eq 200 ]]
 }
 
@@ -738,14 +737,14 @@ HEALTH_ROUTE=.aptible/alb-healthcheck
   UPSTREAM_RESPONSE="upstream-response-500.txt" simulate_upstream
   UPSTREAM_SERVERS=localhost:4000 wait_for_nginx
 
-  run curl -sw "%{http_code}" "http://localhost/${HEALTH_ROUTE}"
+  run curl -o /dev/null -sw "%{http_code}" "http://localhost/${HEALTH_ROUTE}"
   [[ "$output" -eq 200 ]]
 }
 
 @test "${HEALTH_ROUTE} (HTTP): Nginx returns a 200 if FORCE_HEALTHCHECK_SUCCESS = true" {
   FORCE_HEALTHCHECK_SUCCESS=true UPSTREAM_SERVERS=localhost:4000 wait_for_nginx
 
-  run curl -sw "%{http_code}" "http://localhost/${HEALTH_ROUTE}"
+  run curl -o /dev/null -sw "%{http_code}" "http://localhost/${HEALTH_ROUTE}"
   [[ "$output" -eq 200 ]]
 }
 
@@ -753,7 +752,7 @@ HEALTH_ROUTE=.aptible/alb-healthcheck
   simulate_upstream
   FORCE_SSL=true UPSTREAM_SERVERS=localhost:4000 wait_for_nginx
 
-  run curl -sw "%{http_code}" "http://localhost/${HEALTH_ROUTE}"
+  run curl -o /dev/null -sw "%{http_code}" "http://localhost/${HEALTH_ROUTE}"
   [[ "$output" -eq 200 ]]
 }
 
@@ -849,7 +848,7 @@ HEALTH_ROUTE=.aptible/alb-healthcheck
 @test "${HEALTH_ROUTE} (HTTPS): Nginx returns a 502 if the upstream is not responding" {
   UPSTREAM_SERVERS=localhost:4000 wait_for_nginx
 
-  run curl -skw "%{http_code}" "https://localhost/${HEALTH_ROUTE}"
+  run curl -o /dev/null -skw "%{http_code}" "https://localhost/${HEALTH_ROUTE}"
   [[ "$output" -eq 502 ]]
 }
 
@@ -857,7 +856,7 @@ HEALTH_ROUTE=.aptible/alb-healthcheck
   UPSTREAM_RESPONSE="upstream-response.txt" simulate_upstream
   UPSTREAM_SERVERS=localhost:4000 wait_for_nginx
 
-  run curl -skw "%{http_code}" "https://localhost/${HEALTH_ROUTE}"
+  run curl -o /dev/null -skw "%{http_code}" "https://localhost/${HEALTH_ROUTE}"
   [[ "$output" -eq 200 ]]
 }
 
@@ -865,14 +864,14 @@ HEALTH_ROUTE=.aptible/alb-healthcheck
   UPSTREAM_RESPONSE="upstream-response-500.txt" simulate_upstream
   UPSTREAM_SERVERS=localhost:4000 wait_for_nginx
 
-  run curl -skw "%{http_code}" "https://localhost/${HEALTH_ROUTE}"
+  run curl -o /dev/null -skw "%{http_code}" "https://localhost/${HEALTH_ROUTE}"
   [[ "$output" -eq 200 ]]
 }
 
 @test "${HEALTH_ROUTE} (HTTPS): Nginx returns a 200 if FORCE_HEALTHCHECK_SUCCESS = true" {
   FORCE_HEALTHCHECK_SUCCESS=true UPSTREAM_SERVERS=localhost:4000 wait_for_nginx
 
-  run curl -skw "%{http_code}" "https://localhost/${HEALTH_ROUTE}"
+  run curl -o /dev/null -skw "%{http_code}" "https://localhost/${HEALTH_ROUTE}"
   [[ "$output" -eq 200 ]]
 }
 
@@ -911,10 +910,93 @@ HEALTH_ROUTE=.aptible/alb-healthcheck
   [[ "$status" -eq 1 ]]
 }
 
+@test "${HEALTH_ROUTE}: Nginx debounces health checks (200)" {
+  simulate_upstream
+  UPSTREAM_SERVERS=localhost:4000 wait_for_nginx
+
+  # So... we can't use a pipe in our tests here, because that blows up in
+  # Travis (it hangs forever doing nothing). This is an issue in BATS we've
+  # encountered a number of times in the past. We work around the problem by
+  # spawning a shell to run the pipe for us...
+  url="http://localhost/${HEALTH_ROUTE}"
+  sh -c "curl -fs '$url' | grep upstream:200"
+  sh -c "curl -fs '$url' | grep cache:200"
+  sh -c "curl -fs '$url' | grep cache:200"
+  sh -c "curl -fs '$url' | grep cache:200"
+
+  n="$(grep "GET /healthcheck" "$UPSTREAM_OUT" | wc -l)"
+  [[ "$n" -eq 1 ]]
+}
+
+@test "${HEALTH_ROUTE}: Nginx debounces health checks (500, non strict)" {
+  UPSTREAM_RESPONSE="upstream-response-500.txt" simulate_upstream
+  UPSTREAM_SERVERS=localhost:4000 wait_for_nginx
+
+  url="http://localhost/${HEALTH_ROUTE}"
+  sh -c "curl -fs '$url' | grep upstream:200"
+  sh -c "curl -fs '$url' | grep cache:200"
+  sh -c "curl -fs '$url' | grep cache:200"
+  sh -c "curl -fs '$url' | grep cache:200"
+
+  n="$(grep "GET /healthcheck" "$UPSTREAM_OUT" | wc -l)"
+  [[ "$n" -eq 1 ]]
+}
+
+@test "${HEALTH_ROUTE}: Nginx debounces health checks (500, strict)" {
+  UPSTREAM_RESPONSE="upstream-response-500.txt" simulate_upstream
+  STRICT_HEALTH_CHECKS=true UPSTREAM_SERVERS=localhost:4000 wait_for_nginx
+
+  url="http://localhost/${HEALTH_ROUTE}"
+  sh -c "curl -s '$url' | grep upstream:500"
+  sh -c "curl -s '$url' | grep cache:500"
+  sh -c "curl -s '$url' | grep cache:500"
+  sh -c "curl -s '$url' | grep cache:500"
+
+  n="$(grep "GET /healthcheck" "$UPSTREAM_OUT" | wc -l)"
+  [[ "$n" -eq 1 ]]
+}
+
+@test "${HEALTH_ROUTE}: Nginx debounces health checks with a slowish upstream" {
+  UPSTREAM_DELAY=0.5 simulate_upstream
+  UPSTREAM_SERVERS=localhost:4000 wait_for_nginx
+
+  curl -fs "http://localhost/${HEALTH_ROUTE}" &
+  sleep 0.1
+
+  curl -fs "http://localhost/${HEALTH_ROUTE}" &
+  sleep 0.1
+
+  curl -fs "http://localhost/${HEALTH_ROUTE}" &
+  sleep 0.1
+
+  curl -fs "http://localhost/${HEALTH_ROUTE}"
+
+  n="$(grep "GET /healthcheck" "$UPSTREAM_OUT" | wc -l)"
+  [[ "$n" -eq 1 ]]
+}
+
+@test "${HEALTH_ROUTE}: Nginx does not debounce health checks with a very slow upstream" {
+  UPSTREAM_DELAY=3 simulate_upstream
+  UPSTREAM_SERVERS=localhost:4000 wait_for_nginx
+
+  curl -fs "http://localhost/${HEALTH_ROUTE}" &
+  sleep 0.1
+
+  curl -fs "http://localhost/${HEALTH_ROUTE}" &
+  sleep 0.1
+
+  curl -fs "http://localhost/${HEALTH_ROUTE}" &
+  sleep 0.1
+
+  curl -fs "http://localhost/${HEALTH_ROUTE}"
+
+  n="$(grep "GET /healthcheck" "$UPSTREAM_OUT" | wc -l)"
+  [[ "$n" -eq 4 ]]
+}
+
 @test "it applies a default KEEPALIVE_TIMEOUT of 5 seconds (HTTP)" {
   simulate_upstream
   UPSTREAM_SERVERS=localhost:4000 wait_for_nginx
-  wait_for_proxy_protocol
 
   # We're going to make 3 requests, but the last request will come in 8 seconds
   # after the second one. As a result, we should only see 2 requests on the
@@ -931,7 +1013,6 @@ HEALTH_ROUTE=.aptible/alb-healthcheck
 @test "it applies a default KEEPALIVE_TIMEOUT of 5 seconds (HTTPS)" {
   simulate_upstream
   UPSTREAM_SERVERS=localhost:4000 wait_for_nginx
-  wait_for_proxy_protocol
 
   # Same as above
   "${BATS_TEST_DIRNAME}/connect-keepalive" https 8
@@ -945,7 +1026,6 @@ HEALTH_ROUTE=.aptible/alb-healthcheck
 @test "it allows setting a custom KEEPALIVE_TIMEOUT (HTTP)" {
   simulate_upstream
   KEEPALIVE_TIMEOUT=60 UPSTREAM_SERVERS=localhost:4000 wait_for_nginx
-  wait_for_proxy_protocol
 
   # This time, we should see all 3 requests
   "${BATS_TEST_DIRNAME}/connect-keepalive" http 8
@@ -959,7 +1039,6 @@ HEALTH_ROUTE=.aptible/alb-healthcheck
 @test "it allows setting a custom KEEPALIVE_TIMEOUT (HTTPS)" {
   simulate_upstream
   KEEPALIVE_TIMEOUT=60 UPSTREAM_SERVERS=localhost:4000 wait_for_nginx
-  wait_for_proxy_protocol
 
   # This time, we should see all 3 requests
   "${BATS_TEST_DIRNAME}/connect-keepalive" https 8
