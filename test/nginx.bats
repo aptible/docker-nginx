@@ -90,6 +90,11 @@ NGINX_VERSION=1.15.5
   [[ ! "$output" =~ "$NGINX_VERSION" ]]
 }
 
+@test "It allows configuring worker_connections" {
+  WORKER_CONNECTIONS=123 wait_for_nginx
+  grep "worker_connections 123" /etc/nginx/nginx.conf
+}
+
 @test "It allows passing a certificate via the environment" {
   openssl req -x509 -batch -nodes -newkey rsa:1024 \
     -keyout nginx.key -out nginx.crt \

@@ -3,7 +3,7 @@ worker_processes 4;
 pid /run/nginx.pid;
 
 events {
-  worker_connections 768;
+  worker_connections <%= ENV['WORKER_CONNECTIONS'] || 768 %>;
 }
 
 http {
