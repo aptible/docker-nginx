@@ -14,6 +14,7 @@ http {
   types_hash_max_size 2048;
   client_max_body_size 0;
   underscores_in_headers on;
+  ignore_invalid_headers <%= ENV['IGNORE_INVALID_HEADERS'] || "on" %>;
 
   # Allow for large headers
   large_client_header_buffers 4 32k;

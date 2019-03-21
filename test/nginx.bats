@@ -285,6 +285,24 @@ NGINX_VERSION=1.15.8
   [ "$status" -eq 0 ]
 }
 
+@test "It ignores invalid headers by default" {
+  rm /tmp/nc.log || true
+  nc -l -p 4000 127.0.0.1 > /tmp/nc.log &
+  UPSTREAM_SERVERS=127.0.0.1:4000 wait_for_nginx
+  curl --header "Periods.Are.Invalid: true" --max-time 1 http://localhost
+  run cat /tmp/nc.log
+  [[ ! "$output" =~ "Periods.Are.Invalid: true" ]]
+}
+
+@test "It can allow invalid headers" {
+  rm /tmp/nc.log || true
+  nc -l -p 4000 127.0.0.1 > /tmp/nc.log &
+  IGNORE_INVALID_HEADERS=off UPSTREAM_SERVERS=127.0.0.1:4000 wait_for_nginx
+  curl --header "Periods.Are.Invalid: false" --max-time 1 http://localhost
+  run cat /tmp/nc.log
+  [[ "$output" =~ "Periods.Are.Invalid: false" ]]
+}
+
 @test "It allows underscores in headers" {
   rm /tmp/nc.log || true
   nc -l -p 4000 127.0.0.1 > /tmp/nc.log &
