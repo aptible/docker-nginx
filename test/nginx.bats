@@ -76,7 +76,7 @@ teardown() {
   cp "$TMPDIR"/* /usr/html
 }
 
-NGINX_VERSION=1.15.8
+NGINX_VERSION=1.15.9
 
 @test "It should install nginx $NGINX_VERSION" {
   run /usr/sbin/nginx -v
