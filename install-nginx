@@ -5,8 +5,8 @@ set -o pipefail
 
 mkdir /nginx && cd /nginx
 
-NGINX_VERSION='1.15.9'
-NGINX_SHASUM='c6dfbc71a894dacf4688b2b541180150a8bbd8a9'
+NGINX_VERSION='1.15.12'
+NGINX_SHASUM='e81fbb177ce9ed07c69684fa9d64cb4d5d6a61c7'
 NGINX_RESOURCE="nginx-${NGINX_VERSION}"
 NGINX_ARCHIVE="${NGINX_RESOURCE}.tar.gz"
 
@@ -15,8 +15,8 @@ NGX_DEVEL_KIT_SHASUM="b556d068db23037be30436af559795f45dd93c67"
 NGX_DEVEL_KIT_RESOURCE="ngx_devel_kit-${NGX_DEVEL_KIT_VERSION}"
 NGX_DEVEL_KIT_ARCHIVE="${NGX_DEVEL_KIT_RESOURCE}.tar.gz"
 
-NGX_LUA_VERSION="0.10.13"
-NGX_LUA_SHASUM="88f16ee8f1d168d1f6c1f2a1b48d31a5f4429114"
+NGX_LUA_VERSION="0.10.14"
+NGX_LUA_SHASUM="4490adfe8083dbbc9d0c2fc9f0e9556bf2d9247f"
 NGX_LUA_RESOURCE="lua-nginx-module-${NGX_LUA_VERSION}"
 NGX_LUA_ARCHIVE="${NGX_LUA_RESOURCE}.tar.gz"
 
@@ -28,7 +28,7 @@ curl -fsSL "http://nginx.org/download/${NGINX_ARCHIVE}" -o "$NGINX_ARCHIVE"
 echo "${NGINX_SHASUM}  ${NGINX_ARCHIVE}" | sha1sum -c -
 tar zxf "$NGINX_ARCHIVE"
 
-curl -fsSL "https://github.com/simpl/ngx_devel_kit/archive/v${NGX_DEVEL_KIT_VERSION}.tar.gz" -o "$NGX_DEVEL_KIT_ARCHIVE"
+curl -fsSL "https://github.com/simplresty/ngx_devel_kit/archive/v${NGX_DEVEL_KIT_VERSION}.tar.gz" -o "$NGX_DEVEL_KIT_ARCHIVE"
 echo "${NGX_DEVEL_KIT_SHASUM}  ${NGX_DEVEL_KIT_ARCHIVE}" | sha1sum -c -
 tar zxf "$NGX_DEVEL_KIT_ARCHIVE"
 
