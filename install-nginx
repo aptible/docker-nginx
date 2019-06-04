@@ -5,8 +5,8 @@ set -o pipefail
 
 mkdir /nginx && cd /nginx
 
-NGINX_VERSION='1.15.12'
-NGINX_SHASUM='e81fbb177ce9ed07c69684fa9d64cb4d5d6a61c7'
+NGINX_VERSION='1.17.0'
+NGINX_SHASUM='ab32ce6cff4bcb8c438aadcad9dc2544c66b55fd'
 NGINX_RESOURCE="nginx-${NGINX_VERSION}"
 NGINX_ARCHIVE="${NGINX_RESOURCE}.tar.gz"
 
