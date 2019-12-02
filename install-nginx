@@ -5,13 +5,13 @@ set -o pipefail
 
 mkdir /nginx && cd /nginx
 
-NGINX_VERSION='1.17.3'
-NGINX_SHASUM='ce306bc116159f2050f442f35da96ccde93c464d'
+NGINX_VERSION='1.17.6'
+NGINX_SHASUM='58e27d9be6807a85c1e7f076f75b6ec270b7e72e'
 NGINX_RESOURCE="nginx-${NGINX_VERSION}"
 NGINX_ARCHIVE="${NGINX_RESOURCE}.tar.gz"
 
-NGX_DEVEL_KIT_VERSION="0.3.0"
-NGX_DEVEL_KIT_SHASUM="b556d068db23037be30436af559795f45dd93c67"
+NGX_DEVEL_KIT_VERSION="0.3.1"
+NGX_DEVEL_KIT_SHASUM="e15316e13a7b19a3d2502becbb26043a464a135a"
 NGX_DEVEL_KIT_RESOURCE="ngx_devel_kit-${NGX_DEVEL_KIT_VERSION}"
 NGX_DEVEL_KIT_ARCHIVE="${NGX_DEVEL_KIT_RESOURCE}.tar.gz"
 
@@ -48,7 +48,7 @@ cd "$NGINX_RESOURCE"
 apk-install build-base pcre pcre-dev openssl openssl-dev zlib zlib-dev luajit luajit-dev
 
 export LUAJIT_LIB=/usr/lib
-export LUAJIT_INC=/usr/include/luajit-2.0
+export LUAJIT_INC=/usr/include/luajit-2.1
 
 mkdir -p /tmp/nginx
 
