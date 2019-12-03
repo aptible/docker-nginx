@@ -91,11 +91,15 @@ NGINX_VERSION=1.17.3
   grep "detected a LuaJIT version which is not" "$NGINX_OUT"
 }
 
-
 @test "It does not show a lua_load_resty_core error" {
   wait_for_nginx
 
   ! grep "lua_load_resty_core failed to load the resty.core module" "$NGINX_OUT"
+}
+
+@test "It does not emit any configuration deprecation warnings." {
+  wait_for_nginx
+  ! grep -i "deprecated" "$NGINX_OUT"
 }
 
 @test "It does not include the Nginx version" {
@@ -449,6 +453,15 @@ NGINX_VERSION=1.17.3
   wait_for grep -i 'get' "$UPSTREAM_OUT"
   run grep -i 'X-Aptible-Health-Check:' "$UPSTREAM_OUT"
   [[ "$status" -eq 1 ]]
+}
+
+@test "It logs the X-Amzn-Trace-Id header for ALB Endpoints." {
+  simulate_upstream
+  UPSTREAM_SERVERS=127.0.0.1:4000 wait_for_nginx
+  curl -sk -H 'X-Amzn-Trace-Id: Root=1-67891233-abcdef012345678912345678' https://localhost
+
+  wait_for grep -i 'get' "$UPSTREAM_OUT"
+  run grep -i 'Root=1-67891233-abcdef01245678912345678' "$UPSTREAM_OUT"
 }
 
 @test "It supports GZIP compression of responses" {
