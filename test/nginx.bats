@@ -693,6 +693,22 @@ NGINX_VERSION=1.17.3
   [[ "$status" == "500" ]]
 }
 
+@test "${HEALTH_ROUTE} does not log requests from ELB-HealthChecker User Agent" {
+  simulate_upstream
+  UPSTREAM_SERVERS=127.0.0.1:4000 wait_for_nginx
+
+  curl -H 'Host: test.host' -A "ELB-HealthChecker/2.0" "http://localhost/${HEALTH_ROUTE}" > /dev/null 2>&1
+  ! wait_for grep -i 'ELB-HealthChecker' "$NGINX_OUT"
+}
+
+@test "${HEALTH_ROUTE} conditionally can log requests from ELB-HealthChecker User Agent" {
+  simulate_upstream
+  SHOW_ELB_HEALTHCHECKS=true UPSTREAM_SERVERS=127.0.0.1:4000 wait_for_nginx
+
+  curl -H 'Host: test.host' -A "ELB-HealthChecker/2.0" "http://localhost/${HEALTH_ROUTE}" > /dev/null 2>&1
+  wait_for grep -i 'ELB-HealthChecker' "$NGINX_OUT"
+}
+
 @test "${HEALTH_ROUTE} (HTTP): Nginx rewrites the request path to /healthcheck" {
   simulate_upstream
   UPSTREAM_SERVERS=127.0.0.1:4000 wait_for_nginx
