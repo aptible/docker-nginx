@@ -442,6 +442,15 @@ NGINX_VERSION=1.17.3
   [[ "$status" -eq 1 ]]
 }
 
+@test "It logs the X-Amzn-Trace-Id header for ALB Endpoints." {
+  simulate_upstream
+  UPSTREAM_SERVERS=127.0.0.1:4000 wait_for_nginx
+  curl -sk -H 'X-Amzn-Trace-Id: Root=1-67891233-abcdef012345678912345678' https://localhost
+
+  wait_for grep -i 'get' "$UPSTREAM_OUT"
+  run grep -i 'Root=1-67891233-abcdef01245678912345678' "$UPSTREAM_OUT"
+}
+
 @test "It supports GZIP compression of responses" {
   simulate_upstream
   UPSTREAM_SERVERS=127.0.0.1:4000 wait_for_nginx
