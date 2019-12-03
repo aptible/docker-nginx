@@ -55,6 +55,9 @@ http {
 
   server_tokens off;
 
+  # https://gitlab.alpinelinux.org/alpine/aports/issues/10478
+  lua_load_resty_core off;
+
   lua_shared_dict health 128k;
 
   include /etc/nginx/conf.d/*.conf;
