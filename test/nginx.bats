@@ -83,6 +83,12 @@ NGINX_VERSION=1.17.3
   [[ "$output" =~ "$NGINX_VERSION"  ]]
 }
 
+@test "It does not emit any configuration deprecation warnings." {
+  wait_for_nginx
+  ! grep -i "deprecated" "$NGINX_OUT"
+
+}
+
 @test "It does not include the Nginx version" {
   wait_for_nginx
   run curl -v http://localhost
