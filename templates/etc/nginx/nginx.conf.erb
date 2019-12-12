@@ -29,12 +29,19 @@ http {
   log_format proxy_log '$proxy_protocol_addr $ssl_protocol/$ssl_cipher '
                        '$host $remote_user [$time_local] '
                        '"$request" $status $body_bytes_sent $request_time '
-                       '"$http_referer" "$http_user_agent"';
+                       '"$http_referer" "$http_user_agent" '
+                       '"$http_x_amzn_trace_id"';
 
   log_format http_log  '$remote_addr:$remote_port $ssl_protocol/$ssl_cipher '
                        '$host $remote_user [$time_local] '
                        '"$request" $status $body_bytes_sent $request_time '
-                       '"$http_referer" "$http_user_agent"';
+                       '"$http_referer" "$http_user_agent" '
+                       '"$http_x_amzn_trace_id"';
+
+  map $http_user_agent $excluded_ua {
+         ~ELB-HealthChecker  0;
+         default     1;
+  }
 
   # /dev/stdout is a symlink, pointing to /proc/self/fd/1.
   # docker <0.12.0 has issues writing to it (on alpine?) for some reason.
@@ -52,6 +59,9 @@ http {
   ssl_dhparam /etc/nginx/dhparams.pem;
 
   server_tokens off;
+
+  # https://gitlab.alpinelinux.org/alpine/aports/issues/10478
+  lua_load_resty_core off;
 
   lua_shared_dict health 128k;
 

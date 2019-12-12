@@ -29,7 +29,7 @@ server {
 }
 
 server {
-  listen 443 <%= 'proxy_protocol' if ENV['PROXY_PROTOCOL'] == 'true' %>;
+  listen 443 ssl <%= 'proxy_protocol' if ENV['PROXY_PROTOCOL'] == 'true' %>;
 
   <% if ENV['FORCE_SSL'] == 'true' %>
     add_header Strict-Transport-Security "max-age=<%= ENV['HSTS_MAX_AGE'] || 31536000 %>" always;
@@ -58,7 +58,7 @@ server {
     # the "real" server. That is fine on Enclave because clients are not
     # connecting directly to Nginx. That said, we should perhaps allow passing
     # 2 certificates here: a default, and one for SNI.
-    listen 443 default_server <%= 'proxy_protocol' if ENV['PROXY_PROTOCOL'] == 'true' %>;
+    listen 443 ssl default_server <%= 'proxy_protocol' if ENV['PROXY_PROTOCOL'] == 'true' %>;
 
     include /etc/nginx/partial/ssl.conf;
     include /etc/nginx/partial/health.conf;

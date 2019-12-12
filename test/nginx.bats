@@ -87,6 +87,25 @@ NGINX_VERSION=1.17.6
   openssl version | grep "1.0.2"
 }
 
+@test "It unfortunately shows a LuaJIT warning." {
+  wait_for_nginx
+
+  # We can/should install resty-core if/when it is packaged for alpine.
+  # https://gitlab.alpinelinux.org/alpine/aports/issues/10478
+  grep "detected a LuaJIT version which is not" "$NGINX_OUT"
+}
+
+@test "It does not show a lua_load_resty_core error" {
+  wait_for_nginx
+
+  ! grep "lua_load_resty_core failed to load the resty.core module" "$NGINX_OUT"
+}
+
+@test "It does not emit any configuration deprecation warnings." {
+  wait_for_nginx
+  ! grep -i "deprecated" "$NGINX_OUT"
+}
+
 @test "It does not include the Nginx version" {
   wait_for_nginx
   run curl -v http://localhost
@@ -440,6 +459,15 @@ NGINX_VERSION=1.17.6
   [[ "$status" -eq 1 ]]
 }
 
+@test "It logs the X-Amzn-Trace-Id header for ALB Endpoints." {
+  simulate_upstream
+  UPSTREAM_SERVERS=127.0.0.1:4000 wait_for_nginx
+  curl -sk -H 'X-Amzn-Trace-Id: Root=1-67891233-abcdef012345678912345678' https://localhost
+
+  wait_for grep -i 'get' "$UPSTREAM_OUT"
+  run grep -i 'Root=1-67891233-abcdef01245678912345678' "$UPSTREAM_OUT"
+}
+
 @test "It supports GZIP compression of responses" {
   simulate_upstream
   UPSTREAM_SERVERS=127.0.0.1:4000 wait_for_nginx
@@ -667,6 +695,22 @@ NGINX_VERSION=1.17.6
 
   status="$(curl -s -o /dev/null -w "%{http_code}" "http://127.0.0.1:${HEALTH_PORT}")"
   [[ "$status" == "500" ]]
+}
+
+@test "${HEALTH_ROUTE} does not log requests from ELB-HealthChecker User Agent" {
+  simulate_upstream
+  UPSTREAM_SERVERS=127.0.0.1:4000 wait_for_nginx
+
+  curl -H 'Host: test.host' -A "ELB-HealthChecker/2.0" "http://localhost/${HEALTH_ROUTE}" > /dev/null 2>&1
+  ! wait_for grep -i 'ELB-HealthChecker' "$NGINX_OUT"
+}
+
+@test "${HEALTH_ROUTE} conditionally can log requests from ELB-HealthChecker User Agent" {
+  simulate_upstream
+  SHOW_ELB_HEALTHCHECKS=true UPSTREAM_SERVERS=127.0.0.1:4000 wait_for_nginx
+
+  curl -H 'Host: test.host' -A "ELB-HealthChecker/2.0" "http://localhost/${HEALTH_ROUTE}" > /dev/null 2>&1
+  wait_for grep -i 'ELB-HealthChecker' "$NGINX_OUT"
 }
 
 @test "${HEALTH_ROUTE} (HTTP): Nginx rewrites the request path to /healthcheck" {
