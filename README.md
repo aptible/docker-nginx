@@ -4,6 +4,14 @@
 
 NGiNX HTTP reverse proxy server.
 
+## Intended Use
+
+The `aptible/nginx` image is used for proxy containers that handle SSL/TLS
+termination and same-instance load balancing for Aptible Deploy
+[Endpoints](https://www.aptible.com/documentation/deploy/reference/apps/endpoints.html#endpoints).
+For customers, we recommend using the [official `nginx` image](https://hub.docker.com/_/nginx)
+instead or forking this project if you would like to modify it for your own use.
+
 ## Installation and Usage
 
     docker pull quay.io/aptible/nginx
