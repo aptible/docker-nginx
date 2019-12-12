@@ -76,11 +76,15 @@ teardown() {
   cp "$TMPDIR"/* /usr/html
 }
 
-NGINX_VERSION=1.17.3
+NGINX_VERSION=1.17.6
 
 @test "It should install nginx $NGINX_VERSION" {
   run /usr/sbin/nginx -v
   [[ "$output" =~ "$NGINX_VERSION"  ]]
+}
+
+@test "It should install a 1.0.2 version of OpenSSL" {
+  openssl version | grep "1.0.2"
 }
 
 @test "It unfortunately shows a LuaJIT warning." {
