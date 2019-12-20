@@ -464,8 +464,19 @@ NGINX_VERSION=1.17.6
   UPSTREAM_SERVERS=127.0.0.1:4000 wait_for_nginx
   curl -sk -H 'X-Amzn-Trace-Id: Root=1-67891233-abcdef012345678912345678' https://localhost
 
-  wait_for grep -i 'get' "$UPSTREAM_OUT"
-  run grep -i 'Root=1-67891233-abcdef01245678912345678' "$UPSTREAM_OUT"
+  wait_for grep -i 'get' "$NGINX_OUT"
+  run grep -i 'Root=1-67891233-abcdef012345678912345678' "$NGINX_OUT"
+  [[ "$status" -eq 0 ]]
+}
+
+@test "It logs the X-forwarded-for header." {
+  simulate_upstream
+  UPSTREAM_SERVERS=127.0.0.1:4000 wait_for_nginx
+  curl -sk -H 'X-Forwarded-For: 8.2.4.6' https://localhost
+
+  wait_for grep -i 'get' "$NGINX_OUT"
+  run grep -i '8.2.4.6' "$NGINX_OUT"
+  [[ "$status" -eq 0 ]]
 }
 
 @test "It supports GZIP compression of responses" {

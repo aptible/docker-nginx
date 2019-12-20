@@ -30,13 +30,13 @@ http {
                        '$host $remote_user [$time_local] '
                        '"$request" $status $body_bytes_sent $request_time '
                        '"$http_referer" "$http_user_agent" '
-                       '"$http_x_amzn_trace_id"';
+                       '"$http_x_amzn_trace_id" "$http_x_forwarded_for"';
 
   log_format http_log  '$remote_addr:$remote_port $ssl_protocol/$ssl_cipher '
                        '$host $remote_user [$time_local] '
                        '"$request" $status $body_bytes_sent $request_time '
                        '"$http_referer" "$http_user_agent" '
-                       '"$http_x_amzn_trace_id"';
+                       '"$http_x_amzn_trace_id" "$http_x_forwarded_for"';
 
   map $http_user_agent $excluded_ua {
          ~ELB-HealthChecker  0;
