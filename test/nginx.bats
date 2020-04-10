@@ -5,6 +5,7 @@ export NGINX_OUT="/tmp/nginx.log"
 
 HEALTH_PORT="9000"
 HEALTH_ROUTE=.aptible/alb-healthcheck
+BODY_DELAY=20 # Must be longer than the default client_body_timeout
 
 install_heartbleed() {
   export GOPATH=/tmp/gocode
@@ -74,6 +75,35 @@ teardown() {
   pkill -KILL haproxy || true
   rm -rf /etc/nginx/ssl/*
   cp "$TMPDIR"/* /usr/html
+}
+
+simulate_slow_body() {
+  # Simulates a slow body request by delaying sending the body for the provided
+  # number of seconds. Upstream server must be running as nginx will return a
+  # 405 method not allowed before sending the body.
+
+  # File descriptor 3 is being used for something else so use 4
+  # Connect to the server via TCP socket so we can control how the body is sent
+  exec 4<>/dev/tcp/localhost/80
+
+  # Send the request headers
+  echo -ne "POST / HTTP/1.1\r
+Host: localhost\r
+Connection: close\r
+Content-Length: 4\r\n\n" >&4
+
+  # Send the "test" body text in 2 parts with the provided delay in between
+  echo -ne "te" >&4
+  sleep $1
+  echo -ne "st" >&4
+
+  # Attempt to read the response and timeout after 5 seconds
+  # in case the connection remained open for some reason
+  timeout -t 5 cat <&4
+
+  # Close the file descriptor/connection
+  exec 4<&-
+  exec 4>&-
 }
 
 NGINX_VERSION=1.17.8
@@ -1187,4 +1217,23 @@ NGINX_VERSION=1.17.8
   HOSTNAME_FILTERING_SERVER_NAME="$host" wait_for_nginx
   curl -k --fail --connect-to "${host}:443:localhost:443" "https://${host}"
   ! curl --fail "http://localhost"
+}
+
+@test "It should time out on slow body requests" {
+  simulate_upstream
+  UPSTREAM_SERVERS=127.0.0.1:4000 wait_for_nginx
+
+  run simulate_slow_body $BODY_DELAY
+
+  [[ $output = "" ]]
+  grep '"POST / HTTP/1.1" 408' "$NGINX_OUT"
+}
+
+@test "It should have a configurable client_body_timeout" {
+  simulate_upstream
+  UPSTREAM_SERVERS=127.0.0.1:4000 CLIENT_BODY_TIMEOUT=$(expr $BODY_DELAY + 1) wait_for_nginx
+
+  run simulate_slow_body $BODY_DELAY
+
+  grep 'HTTP/1.1 200' <<< "$output"
 }
