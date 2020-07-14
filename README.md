@@ -90,7 +90,7 @@ If you're on OS X running boot2docker, you can configure your system to trust NG
 
 ## Available Tags
 
-* `latest`: Currently NGiNX 1.17.8
+* `latest`: Currently NGiNX 1.19.1
 
 ## Deployment
 
