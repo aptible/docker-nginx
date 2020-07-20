@@ -106,7 +106,7 @@ Content-Length: 4\r\n\n" >&4
   exec 4>&-
 }
 
-NGINX_VERSION=1.17.8
+NGINX_VERSION=1.19.1
 
 @test "It should install nginx $NGINX_VERSION" {
   run /usr/sbin/nginx -v
