@@ -225,7 +225,7 @@ NGINX_VERSION=1.19.1
   UPSTREAM_SERVERS=127.0.0.1:4000 \
     MAINTENANCE_PAGE_URL=https://www.aptible.com/404.html wait_for_nginx
   run curl localhost 2>/dev/null
-  [[ "$output" =~ "@aptiblestatus" ]]
+  [[ "$output" =~ "status.aptible.com" ]]
 }
 
 @test "It should accept a list of UPSTREAM_SERVERS" {
