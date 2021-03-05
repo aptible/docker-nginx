@@ -20,6 +20,11 @@ NGX_LUA_SHASUM="d09f8353ca573ae6a4b33af252433197d6e45b13"
 NGX_LUA_RESOURCE="lua-nginx-module-${NGX_LUA_VERSION}"
 NGX_LUA_ARCHIVE="${NGX_LUA_RESOURCE}.tar.gz"
 
+HEADERS_MORE_VERSION="0.33"
+HEADERS_MORE_SHASUM="7d6af910dae98f0dbc67bf77e82eab8b7da5d0b1"
+HEADERS_MORE_RESOURCE="headers-more-nginx-module-${HEADERS_MORE_VERSION}"
+HEADERS_MORE_ARCHIVE="${HEADERS_MORE_RESOURCE}.tar.gz"
+
 BUILD_DIR="$(mktemp -d)"
 
 cd "$BUILD_DIR"
@@ -35,6 +40,11 @@ tar zxf "$NGX_DEVEL_KIT_ARCHIVE"
 curl -fsSL "https://github.com/openresty/lua-nginx-module/archive/v${NGX_LUA_VERSION}.tar.gz" -o "$NGX_LUA_ARCHIVE"
 echo "${NGX_LUA_SHASUM}  ${NGX_LUA_ARCHIVE}" | sha1sum -c -
 tar zxf "$NGX_LUA_ARCHIVE"
+
+curl -fsSL "https://github.com/openresty/headers-more-nginx-module/archive/v${HEADERS_MORE_VERSION}.tar.gz" -o "$HEADERS_MORE_ARCHIVE"
+sha1sum "${HEADERS_MORE_ARCHIVE}"
+echo "${HEADERS_MORE_SHASUM}  ${HEADERS_MORE_ARCHIVE}" | sha1sum -c -
+tar zfx "$HEADERS_MORE_ARCHIVE"
 
 echo "Downloaded:"
 ls -l
@@ -69,7 +79,8 @@ mkdir -p /tmp/nginx
   --with-http_gzip_static_module \
   --with-http_realip_module \
   --add-module="../${NGX_DEVEL_KIT_RESOURCE}" \
-  --add-module="../${NGX_LUA_RESOURCE}"
+  --add-module="../${NGX_LUA_RESOURCE}" \
+  --add-module="../${HEADERS_MORE_RESOURCE}"
 
 make
 make install

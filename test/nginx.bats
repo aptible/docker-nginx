@@ -1237,3 +1237,16 @@ NGINX_VERSION=1.19.1
 
   grep 'HTTP/1.1 200' <<< "$output"
 }
+
+@test "It should not set Access-Control-Allow-Origin for proxied requests" {
+  FORCE_SSL=true wait_for_nginx
+  run curl -Ik https://localhost 2>/dev/null
+  ! [[ "$output" =~ "Access-Control-Allow-Origin" ]]
+}
+
+@test "It should set Access-Control-Allow-Origin if we return an error on behalf of a failed upstream" {
+  UPSTREAM_DELAY=5 simulate_upstream
+  PROXY_IDLE_TIMEOUT=1 UPSTREAM_SERVERS=127.0.0.1:4000 wait_for_nginx
+  run curl -Ik https://localhost 2>/dev/null
+  [[ "$output" =~ "Access-Control-Allow-Origin" ]]
+}
