@@ -17,6 +17,7 @@ client_body_timeout <%= ENV['CLIENT_BODY_TIMEOUT'] || 15 %>;
 
 error_page 502 503 504 /50x.html;
 location /50x.html {
+  more_set_headers 'Access-Control-Allow-Origin: *';
 }
 
 <% if ENV['ACME_SERVER'] %>
