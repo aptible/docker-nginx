@@ -15,7 +15,7 @@ script:
 before_deploy:
   - export DOCKER_CONFIG="${HOME}/.docker"
   - mkdir -p "$DOCKER_CONFIG"
-  - openssl aes-256-cbc -K "$DOCKER_CONF_key" -iv "$DOCKER_CONF_iv" -in .docker/config.json.enc -out "${DOCKER_CONFIG}/config.json" -d
+  - openssl aes-256-cbc -K $encrypted_a8d6dc0564c6_key -iv $encrypted_a8d6dc0564c6_iv -in .docker/config.json.enc -out "${DOCKER_CONFIG}/config.json" -d
 
 deploy:
   provider: script
