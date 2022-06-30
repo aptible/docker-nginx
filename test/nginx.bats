@@ -277,6 +277,20 @@ NGINX_VERSION=1.19.1
   [[ "$output" =~ "Strict-Transport-Security: max-age=1234" ]]
 }
 
+@test "It uses the upstream's Strict-Transport-Security header if provided" {
+  UPSTREAM_RESPONSE="upstream-response-hsts.txt" simulate_upstream
+  FORCE_SSL=true wait_for_nginx
+  run curl -Ik https://localhost 2>/dev/null
+  [[ "$output" =~ "Strict-Transport-Security: max-age=123; includeSubDomains" ]]
+}
+
+@test "It uses the upstream's Strict-Transport-Security header even on error responses" {
+  UPSTREAM_RESPONSE="upstream-response-hsts-500.txt" simulate_upstream
+  FORCE_SSL=true wait_for_nginx
+  run curl -Ik https://localhost 2>/dev/null
+  [[ "$output" =~ "Strict-Transport-Security: max-age=123; includeSubDomains" ]]
+}
+
 @test "Its OpenSSL client should support TLS_FALLBACK_SCSV" {
   FORCE_SSL=true wait_for_nginx
   run local_s_client -fallback_scsv
