@@ -39,8 +39,12 @@ http {
                        '"$http_x_amzn_trace_id" "$http_x_forwarded_for"';
 
   map $http_user_agent $excluded_ua {
-         ~ELB-HealthChecker  0;
-         default     1;
+    ~ELB-HealthChecker  0;
+    default             1;
+  }
+
+  map $upstream_http_strict_transport_security $hsts {
+    ''  "max-age=<%= ENV['HSTS_MAX_AGE'] || 31536000 %>";
   }
 
   # /dev/stdout is a symlink, pointing to /proc/self/fd/1.
