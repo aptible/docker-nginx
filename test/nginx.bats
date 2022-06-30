@@ -281,6 +281,7 @@ NGINX_VERSION=1.19.1
   UPSTREAM_RESPONSE="upstream-response-hsts.txt" simulate_upstream
   FORCE_SSL=true wait_for_nginx
   run curl -Ik https://localhost 2>/dev/null
+  echo "$output"
   [[ "$output" =~ "Strict-Transport-Security: max-age=123; includeSubDomains" ]]
 }
 
@@ -288,6 +289,7 @@ NGINX_VERSION=1.19.1
   UPSTREAM_RESPONSE="upstream-response-hsts-500.txt" simulate_upstream
   FORCE_SSL=true wait_for_nginx
   run curl -Ik https://localhost 2>/dev/null
+  echo "$output"
   [[ "$output" =~ "Strict-Transport-Security: max-age=123; includeSubDomains" ]]
 }
 
