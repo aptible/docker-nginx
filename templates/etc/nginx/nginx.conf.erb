@@ -44,7 +44,8 @@ http {
   }
 
   map $upstream_http_strict_transport_security $hsts {
-    ''  "max-age=<%= ENV['HSTS_MAX_AGE'] || 31536000 %>";
+    ''       "max-age=<%= ENV['HSTS_MAX_AGE'] || 31536000 %>";
+    default  $upstream_http_strict_transport_security;
   }
 
   # /dev/stdout is a symlink, pointing to /proc/self/fd/1.
