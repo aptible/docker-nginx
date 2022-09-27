@@ -11,10 +11,10 @@ location = @healthcheck {
 
   <% if ENV['UPSTREAM_SERVERS'] %>
     proxy_pass http://containers;
-    <% unless ENV['DISABLE_HTTP_1_1_HEALTHCHECK']%> 
-      proxy_http_version 1.1;
-    <% else %>
+    <% if ENV['DISABLE_HTTP_1_1_HEALTHCHECK'] == 'true' %> 
       proxy_http_version 1.0;
+    <% else %>
+      proxy_http_version 1.1;
     <% end %>
   <% else %>
     return 502;
