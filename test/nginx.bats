@@ -521,9 +521,9 @@ NGINX_VERSION=1.19.1
 @test "It includes an informative default error page" {
   UPSTREAM_SERVERS=127.0.0.1:4000 wait_for_nginx
   run curl http://localhost
-  [[ "$output" =~ "application crashed" ]]
-  [[ "$output" =~ "you are a visitor" ]]
-  [[ "$output" =~ "you are the owner" ]]
+  [[ "$output" =~ "If you are the owner" ]]
+  [[ "$output" =~ "If you are the owner" ]]
+  [[ "$output" =~ "If you are the owner" ]]
 }
 
 @test "It redirects ACME requests if ACME_SERVER is set" {
