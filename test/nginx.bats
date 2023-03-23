@@ -522,7 +522,7 @@ NGINX_VERSION=1.19.1
   UPSTREAM_SERVERS=127.0.0.1:4000 wait_for_nginx
   run curl http://localhost
   [[ "$output" =~ "application crashed" ]]
-  [[ "$output" =~ "Application is currently unavailable" ]]
+  [[ "$output" =~ "you are a visitor" ]]
   [[ "$output" =~ "you are the owner" ]]
 }
 
