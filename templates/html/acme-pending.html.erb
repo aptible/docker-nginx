@@ -2,119 +2,89 @@
 <html>
 <head>
   <title>Endpoint Setup | Aptible</title>
-  <script type="text/javascript" src="//use.typekit.net/hen3udh.js"></script>
-  <script type="text/javascript">try{Typekit.load();}catch(e){}</script>
   <style type="text/css">
-    .wf-loading .blog-title, .wf-loading .post-title {
-        /* Prevents FOUT while fonts are loading */
-        visibility: hidden;
+      body {
+        font-family: "proxima-nova", arial, "open-sans", sans-serif;
+        margin: 0px;
+        background: #FAFAFA;
       }
-  </style>
-  <style>
-    body {
-      background-color: white;
-      color: black;
-      text-align: center;
-      font-family: "proxima-nova", arial, "open-sans", sans-serif;
-    }
-
-    div.logo {
-      height: 300px;
-      width: 300px;
-      margin: 0 auto 0 auto;
-      background-image: url('https://s.gravatar.com/avatar/3fdb74838e87cd36c68ce2135900f01a?s=300');
-    }
-
-    div.dialog {
-      width: 500px;
-      margin: 75px auto 0 auto;
-      padding: 7px 4em 0 4em;
-    }
-
-    h1 {
-      color: #006699;
-      line-height: 1em;
-    }
-
-    body > p {
-      width: 500px;
-      margin: 0 auto 1em;
-      padding: 1em 0;
-      background-color: #003366;
-      border: 1px solid #CCC;
-      border-right-color: #999;
-      border-bottom-color: #999;
-      border-bottom-left-radius: 4px;
-      border-bottom-right-radius: 4px;
-      border-top-color: #DADADA;
-      color: #666;
-      box-shadow:0 3px 8px rgba(50, 50, 50, 0.17);
-    }
-
-    ul {
-      list-style-type: none;
-      display: inline-block;
-      padding-left: 0px;
-    }
-
-    ul > li {
-      display: inline;
-      padding-left: 10px;
-      padding-right: 10px;
-    }
-
-    code {
-      font-weight: bold;
-    }
-
-    a {
-      color: #006699;
-    }
-    a:link {
-      text-decoration: none;
-    }
-    a:visited {
-      text-decoration: none;
-    }
-    a:hover {
-      text-decoration: underline;
-    }
-    a:active {
-      text-decoration: none;
-    }
-
-    .circle-icon {
-      display: block;
-      margin: 0 auto;
-      height: 40px;
-      width: 40px;
-      background-image: url('https://www.aptible.com/assets/images/tiny-grayscale-logo.png');
-    }
-
-    .circle-icon:hover {
-      background-image: url('https://www.aptible.com/assets/images/tiny-color-logo.png');
-    }
-
-  </style>
+      .error-page {
+        height: 100vh;
+        width: 100vw;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+      .error-page .error-body {
+        background: #FFFFFF;
+        border: 1px solid #E7E8E8;
+        border-radius: 6px;
+        padding: 16px;
+        margin: 24px;
+        width: 700px;
+        text-align: left;
+        box-shadow: 0 1px 2px rgba(0,0,0,.06);
+      }
+      .alert {
+        padding: 10px 16px;
+        background: #AD1A1A;
+        color: #FFFFFF;
+        font-size: 14px;
+        text-align: left;
+        border-radius: 6px;
+      }
+      .alert img {
+        margin-right: 5px;
+        vertical-align: middle;
+      }
+      .content-wrapper {
+        margin: 0 auto;
+        text-align: center;
+        padding-top: 80px;
+        padding-bottom: 80px;
+      }
+      .content-wrapper div {
+        display: inline-block;
+        vertical-align: middle;
+        text-align: center;
+        max-width: 550px;
+      }
+      .wrench {
+        margin-right: 24px;
+      }
+      .error-body h1 {
+        color: #111920;
+        font-size: 24px;
+        line-height: 1;
+      }
+      .error-body p {
+        color: #111920;
+        font-size: 18px;
+        line-height: 1;
+      }
+    </style>
 </head>
 
 <body>
-  <div class="dialog">
-    <div class="logo"></div>
-    <h1>Almost done!</h1>
-    <p>
-      To finish setting up <code><%= ENV['ACME_DOMAIN'] %></code> with Aptible,
-      create a CNAME to this domain from <code><%= ENV['ACME_DOMAIN'] %></code>
-      via your DNS provider.
-    </p>
-    <p>
-      Then, go back to the Aptible Dashboard and click "I created the CNAME".
-    </p>
-  </div>
-  <ul>
-    <li><a href="https://twitter.com/aptible">@aptible</a></li>
-    <li><a href="http://help.aptible.com">Contact Support</a></li>
-  </ul>
-  <a class="circle-icon" href="https://www.aptible.com"></a>
-</body>
+    <div>
+      <div class="error-page">
+        <div class="error-body">
+          <div class="alert">
+            <img src="icon-alert.svg" height="24px" width="24px">Endpoint configuration is not finished.
+            </div>
+            <div class="content-wrapper">
+              <div>
+                <img class="wrench" src="icon-wrench.svg" height="96px" width="96px">
+              </div>
+            <div>
+              <h1>Almost done!</h1>
+              <p>To finish setting up <code><%= ENV['ACME_DOMAIN'] %></code> with Aptible, create a CNAME to this domain from <code><%= ENV['ACME_DOMAIN'] %></code> via your DNS provider.</p>
+              <p>Then, go back to the Aptible Dashboard and click "I created the CNAME".</p>
+              <p><a href="https://aptible.zendesk.com/hc/en-us/requests/new">Contact Support</a></p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </body>
 </html>

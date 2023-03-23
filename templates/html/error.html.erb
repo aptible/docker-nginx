@@ -67,16 +67,7 @@
     <div>
       <div class="error-page">
         <div class="error-body">
-          <div class="alert"><img src="icon-alert.svg" height="24px" width="24px">If you are the owner of this application, check the logs for errors, restart the app, or contact support.</div>
-          <div class="content-wrapper">
-            <div>
-              <img class="wrench" src="icon-wrench.svg" height="96px" width="96px">
-            </div>
-            <div>
-              <h1>Application is currently unavailable</h1>
-              <p>The server is busy or the site is down for maintenance.</p>
-            </div>
-          </div>
+          <%= File.read(ENV.fetch('ERROR_EMBED_PATH')) %>
         </div>
       </div>
     </div>

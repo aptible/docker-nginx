@@ -1,10 +1,12 @@
-<h1>This application crashed</h1>
-
-<p>
-If you are a visitor, please try again shortly.
-</p>
-
-<p>
-If you are the owner of this application, check your logs for
-errors, or restart your app.
-</p>
+<div class="alert">
+  <img src="icon-alert.svg" height="24px" width="24px">If you are the owner of this application, check the logs for errors, restart the app, or contact support.
+  </div>
+  <div class="content-wrapper">
+    <div>
+      <img class="wrench" src="icon-wrench.svg" height="96px" width="96px">
+    </div>
+  <div>
+    <h1>Application is currently unavailable</h1>
+    <p>The server is busy or the site is down for maintenance.</p>
+  </div>
+</div>

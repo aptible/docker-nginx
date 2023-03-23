@@ -1,11 +1,12 @@
-<h1>This request was blocked by Hostname Filtering</h1>
-
-<p>
-This means your request used a hostname different from the one you used when
-configuring this Endpoint and enabled Hostname Filtering.
-</p>
-
-<p>
-Make sure you are using the hostname you specified when creating this Endpoint
-to connect.
-</p>
+<div class="alert">
+  <img src="icon-alert.svg" height="24px" width="24px">If you are the owner of this application, check the logs for errors, restart the app, or contact support.
+  </div>
+  <div class="content-wrapper">
+    <div>
+      <img class="wrench" src="icon-wrench.svg" height="96px" width="96px">
+    </div>
+  <div>
+    <h1>This request was blocked by Hostname Filtering</h1>
+    <p>This means your request used a hostname different from the one you used when configuring this Endpoint and enabled Hostname Filtering. Make sure you are using the hostname you specified when creating this Endpoint to connect.</p>
+  </div>
+</div>
