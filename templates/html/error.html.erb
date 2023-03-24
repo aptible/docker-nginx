@@ -1,18 +1,13 @@
-<% require 'base64' %>
-
 <!DOCTYPE html>
 <html>
   <head>
     <title>Application Error</title>
-
-    <link rel="shortcut icon"type="image/x-icon" href="data:image/x-icon;,">
-
     <style type="text/css">
       body {
         font-family: "proxima-nova", arial, "open-sans", sans-serif;
         margin: 0px;
+        background: #FAFAFA;
       }
-
       .error-page {
         height: 100vh;
         width: 100vw;
@@ -20,43 +15,59 @@
         align-items: center;
         justify-content: center;
       }
-
       .error-page .error-body {
-        max-width: 100%;
-        text-align: center;
-        border-radius: 5px;
-        padding: 50px;
+        background: #FFFFFF;
+        border: 1px solid #E7E8E8;
+        border-radius: 6px;
+        padding: 16px;
+        margin: 24px;
+        width: 700px;
+        text-align: left;
+        box-shadow: 0 1px 2px rgba(0,0,0,.06);
       }
-
-      .error-body .error-logo {
-        height: 140px;
-        width: 140px;
-        background-size: 140px;
-        margin: 0 auto 0 auto;
-        background-image: url("data:image/png;base64,<%= Base64.strict_encode64(File.open("./error-logo.png", "rb").read) %>");
-      }
-
-      .error-body h1 {
-        color: #4a4a4a;
-        font-size: 28px;
-        margin-top: 50px;
-      }
-
-      .error-body p {
-        color: #999;
+      .alert {
+        padding: 10px 16px;
+        background: #AD1A1A;
+        color: #FFFFFF;
         font-size: 14px;
-        margin-top: 25px;
+        text-align: left;
+        border-radius: 6px;
+      }
+      .alert svg {
+        margin-right: 8px;
+        vertical-align: middle;
+      }
+      .content-wrapper {
+        margin: 0 auto;
+        text-align: center;
+        padding-top: 80px;
+        padding-bottom: 80px;
+      }
+      .content-wrapper div {
+        display: inline-block;
+        vertical-align: middle;
+        text-align: center;
+        max-width: 550px;
+      }
+      .content-wrapper svg {
+        margin-right: 24px;
+      }
+      .error-body h1 {
+        color: #111920;
+        font-size: 24px;
+        line-height: 1;
+      }
+      .error-body p {
+        color: #111920;
+        font-size: 18px;
+        line-height: 1;
       }
     </style>
-
   </head>
-
   <body>
-    <div >
+    <div>
       <div class="error-page">
         <div class="error-body">
-          <div class="error-logo"></div>
-
           <%= File.read(ENV.fetch('ERROR_EMBED_PATH')) %>
         </div>
       </div>
