@@ -523,7 +523,7 @@ NGINX_VERSION=1.19.1
   run curl http://localhost
   [[ "$output" =~ "If you are the owner" ]]
   [[ "$output" =~ "Application is currently unavailable" ]]
-  [[ "$busy or the site is down for maintenance" ]]
+  [[ "$output" =~ "busy or the site is down for maintenance" ]]
 }
 
 @test "It redirects ACME requests if ACME_SERVER is set" {
