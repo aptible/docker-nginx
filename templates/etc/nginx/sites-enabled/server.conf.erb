@@ -1,7 +1,7 @@
 <% if ENV['UPSTREAM_SERVERS'] %>
 upstream containers {
   <% (ENV['UPSTREAM_SERVERS']).split(',').each do |server| %>
-    server <%= server %> max_fails=10;
+    server <%= server %>;
   <% end %>
 }
 <% end %>
