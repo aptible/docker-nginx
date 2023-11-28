@@ -58,7 +58,7 @@ jobs:
       with:
         context: .
         build-args: |
-          "APLINE_VERSION"=${{ matrix.apline_version }}
+          "APLINE_VERSION=${{ matrix.apline_version }}"
         file: ./Dockerfile
         push: true
         target: ${{ steps.metadata.outputs.images }}
