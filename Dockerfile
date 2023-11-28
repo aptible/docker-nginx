@@ -1,4 +1,5 @@
-FROM quay.io/aptible/alpine:3.8
+ARG ALPINE_VERSION
+FROM quay.io/aptible/alpine:${ALPINE_VERSION}
 
 # ruby necessary for ERB
 # curl necessary for integration tests
