@@ -26,13 +26,23 @@ http {
   include /etc/nginx/mime.types;
   default_type application/octet-stream;
 
-  log_format proxy_log '$proxy_protocol_addr $ssl_protocol/$ssl_cipher '
+  map $http_x_amzn_tls_version $logged_protocol {
+    ~.+       $http_x_amzn_tls_version;
+    default   $ssl_protocol;
+  }
+
+  map $http_x_amzn_tls_cipher_suite $logged_cipher {
+    ~.+       $http_x_amzn_tls_cipher_suite;
+    default   $ssl_cipher;
+  }
+
+  log_format proxy_log '$proxy_protocol_addr $logged_protocol/$logged_cipher '
                        '$host $remote_user [$time_local] '
                        '"$request" $status $body_bytes_sent $request_time '
                        '"$http_referer" "$http_user_agent" '
                        '"$http_x_amzn_trace_id" "$http_x_forwarded_for"';
 
-  log_format http_log  '$remote_addr:$remote_port $ssl_protocol/$ssl_cipher '
+  log_format http_log  '$remote_addr:$remote_port $logged_protocol/$logged_cipher '
                        '$host $remote_user [$time_local] '
                        '"$request" $status $body_bytes_sent $request_time '
                        '"$http_referer" "$http_user_agent" '
