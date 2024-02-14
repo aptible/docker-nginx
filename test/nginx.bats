@@ -499,6 +499,31 @@ NGINX_VERSION=1.19.1
   [[ "$status" -eq 0 ]]
 }
 
+@test "It logs the x-amzn-tls-version and x-amzn-tls-cipher-suite headers if present" {
+  simulate_upstream
+  UPSTREAM_SERVERS=127.0.0.1:4000 wait_for_nginx
+  curl -sk \
+    -H 'X-Amzn-Tls-Version: proto-from-aws' \
+    -H 'X-Amzn-Tls-Cipher-Suite: cipher-from-aws' \
+    https://localhost
+
+  wait_for grep -i 'get' "$NGINX_OUT"
+  run grep -i 'proto-from-aws/cipher-from-aws' "$NGINX_OUT"
+  [[ "$status" -eq 0 ]]
+}
+
+@test "It logs the seen protocol/cipher if x-amzn-tls-* headers are not present" {
+  CURL_EXPECTED_PROTO_CIPHER="TLSv1.2/ECDHE-RSA-AES256-GCM-SHA384"
+
+  simulate_upstream
+  UPSTREAM_SERVERS=127.0.0.1:4000 wait_for_nginx
+  curl -sk https://localhost
+
+  wait_for grep -i 'get' "$NGINX_OUT"
+  run grep -i $CURL_EXPECTED_PROTO_CIPHER "$NGINX_OUT"
+  [[ "$status" -eq 0 ]]
+}
+
 @test "It logs the X-forwarded-for header." {
   simulate_upstream
   UPSTREAM_SERVERS=127.0.0.1:4000 wait_for_nginx
