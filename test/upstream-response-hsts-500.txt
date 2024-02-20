@@ -1,0 +1,6 @@
+HTTP/1.1 500 INTERNAL SERVER ERROR
+Content-Type: application/json
+Content-Length: 30
+Strict-Transport-Security: max-age=123; includeSubDomains
+
+{ "message": "Oops, World!" }

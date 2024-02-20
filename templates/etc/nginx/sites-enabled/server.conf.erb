@@ -32,7 +32,8 @@ server {
   listen 443 ssl <%= 'proxy_protocol' if ENV['PROXY_PROTOCOL'] == 'true' %>;
 
   <% if ENV['FORCE_SSL'] == 'true' %>
-    add_header Strict-Transport-Security "max-age=<%= ENV['HSTS_MAX_AGE'] || 31536000 %>" always;
+  proxy_hide_header Strict-Transport-Security;
+  add_header Strict-Transport-Security $hsts always;
   <% end %>
 
   include /etc/nginx/partial/server.conf;
