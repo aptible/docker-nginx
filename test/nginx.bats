@@ -106,15 +106,15 @@ Content-Length: 4\r\n\n" >&4
   exec 4>&-
 }
 
-NGINX_VERSION=1.19.1
+NGINX_VERSION=1.24.0
 
 @test "It should install nginx $NGINX_VERSION" {
   run /usr/sbin/nginx -v
   [[ "$output" =~ "$NGINX_VERSION"  ]]
 }
 
-@test "It should install a 1.0.2 version of OpenSSL" {
-  openssl version | grep "1.0.2"
+@test "It should install a 1.1.1o version of OpenSSL" {
+  openssl version | grep "1.1.1o"
 }
 
 @test "It unfortunately shows a LuaJIT warning." {
